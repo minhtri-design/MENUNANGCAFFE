@@ -226,30 +226,30 @@ const Store = {
     const lines = []; // { text, font, align, gapAfter }
 
     lines.push({ text:"NẮNG CAFÉ", font:"bold 26px Arial", align:"center", gap:6 });
-    lines.push({ text:"Food and Drink", font:"14px Arial", align:"center", gap:10 });
-    lines.push({ text:"-".repeat(32), font:"14px Arial", align:"center", gap:8 });
+    lines.push({ text:"Food and Drink", font:"bold 14px Arial", align:"center", gap:10 });
+    lines.push({ text:"-".repeat(32), font:"bold 14px Arial", align:"center", gap:8 });
     lines.push({ text:tableName, font:"bold 20px Arial", align:"left", gap:4 });
-    lines.push({ text:`${now.toLocaleDateString('vi-VN')}  ${now.toLocaleTimeString('vi-VN')}`, font:"13px Arial", align:"left", gap:10 });
-    lines.push({ text:"-".repeat(32), font:"14px Arial", align:"center", gap:10 });
+    lines.push({ text:`${now.toLocaleDateString('vi-VN')}  ${now.toLocaleTimeString('vi-VN')}`, font:"bold 13px Arial", align:"left", gap:10 });
+    lines.push({ text:"-".repeat(32), font:"bold 14px Arial", align:"center", gap:10 });
 
     if(items.length === 0){
-      lines.push({ text:"(Chưa có món)", font:"14px Arial", align:"center", gap:10 });
+      lines.push({ text:"(Chưa có món)", font:"bold 14px Arial", align:"center", gap:10 });
     }
     items.forEach(([name, it])=>{
-      mctx.font = "15px Arial";
+      mctx.font = "bold 15px Arial";
       const nameLines = this._wrapCanvasText(mctx, name, contentW);
       nameLines.forEach((nl,i)=>{
-        lines.push({ text:nl, font:"15px Arial", align:"left", gap: i===nameLines.length-1?2:0 });
+        lines.push({ text:nl, font:"bold 15px Arial", align:"left", gap: i===nameLines.length-1?2:0 });
       });
       const unitTxt = it.unit ? ` / ${it.unit}` : '';
-      lines.push({ text:`${it.qty} x ${it.price}k${unitTxt}  =  ${it.qty*it.price}k`, font:"14px Arial", align:"right", gap:10 });
+      lines.push({ text:`${it.qty} x ${it.price}k${unitTxt}  =  ${it.qty*it.price}k`, font:"bold 14px Arial", align:"right", gap:10 });
     });
 
-    lines.push({ text:"-".repeat(32), font:"14px Arial", align:"center", gap:10 });
+    lines.push({ text:"-".repeat(32), font:"bold 14px Arial", align:"center", gap:10 });
     const total = this.tableTotal(table);
     lines.push({ text:`TỔNG CỘNG:  ${total.toLocaleString('vi-VN')}k`, font:"bold 20px Arial", align:"right", gap:16 });
-    lines.push({ text:"Cảm ơn quý khách!", font:"13px Arial", align:"center", gap:6 });
-    lines.push({ text:"Hẹn gặp lại ☀️", font:"13px Arial", align:"center", gap:20 });
+    lines.push({ text:"Cảm ơn quý khách!", font:"bold 13px Arial", align:"center", gap:6 });
+    lines.push({ text:"Hẹn gặp lại ☀️", font:"bold 13px Arial", align:"center", gap:20 });
 
     // Tính chiều cao dựa trên font-size từng dòng
     let y = 14;
@@ -306,7 +306,7 @@ const Store = {
       for(let x = 0; x < w; x++){
         const idx = (y * w + x) * 4;
         const lum = 0.299*img[idx] + 0.587*img[idx+1] + 0.114*img[idx+2];
-        if(lum < 200){ // pixel tối => in ra (bit = 1)
+        if(lum < 235){ // pixel tối => in ra (bit = 1) — ngưỡng nới rộng để chữ in đậm, rõ hơn
           const byteIndex = y * bytesPerRow + (x >> 3);
           raster[byteIndex] |= (1 << (7 - (x % 8)));
         }
