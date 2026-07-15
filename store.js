@@ -13,6 +13,10 @@ const SETTINGS_KEY = "nangcafe_settings_v1";
 const ORDER_LOG_KEY = "nangcafe_order_log_v1";
 const TABLE_LIST = ["Mang về","Bàn 1","Bàn 2","Bàn 3","Bàn 4","Bàn 5","Bàn 6","Bàn 7","Bàn 8"];
 
+// UUID máy in Xprinter XP-58IIB (dò được bằng app nRF Connect) — dùng cho in qua Bluetooth Low Energy (BLE)
+const BLE_PRINTER_SERVICE_UUID = "49535343-fe7d-4ae5-8fa9-9fafd205e455";
+const BLE_PRINTER_WRITE_CHAR_UUID = "49535343-8841-43f4-a8d4-ecbe34729bb3"; // Write / Write Without Response
+
 // Danh sách ngân hàng phổ biến hỗ trợ VietQR (mã BIN theo chuẩn Napas)
 // Nếu ngân hàng của bạn không có trong danh sách, có thể nhập mã BIN thủ công ở trang Cài đặt.
 const VIETQR_BANKS = [
@@ -289,6 +293,75 @@ const Store = {
     window.location.href = rawbtUrl;
   },
 
+  // ---------- IN QUA BLUETOOTH LOW ENERGY (BLE) — dùng được trên iPhone (qua app Bluefy) ----------
+  // Chuyển canvas hoá đơn (ảnh) thành ảnh đen trắng 1-bit (1 = có mực), theo đúng chuẩn
+  // lệnh "GS v 0" của ESC/POS, rồi gửi thẳng qua Bluetooth tới máy in — không cần cài app trung gian.
+  _canvasToRasterBytes(canvas){
+    const ctx = canvas.getContext('2d');
+    const w = canvas.width, h = canvas.height;
+    const img = ctx.getImageData(0, 0, w, h).data;
+    const bytesPerRow = Math.ceil(w / 8);
+    const raster = new Uint8Array(bytesPerRow * h);
+    for(let y = 0; y < h; y++){
+      for(let x = 0; x < w; x++){
+        const idx = (y * w + x) * 4;
+        const lum = 0.299*img[idx] + 0.587*img[idx+1] + 0.114*img[idx+2];
+        if(lum < 200){ // pixel tối => in ra (bit = 1)
+          const byteIndex = y * bytesPerRow + (x >> 3);
+          raster[byteIndex] |= (1 << (7 - (x % 8)));
+        }
+      }
+    }
+    return { bytesPerRow, height: h, data: raster };
+  },
+
+  _buildEscPosFromCanvas(canvas){
+    const { bytesPerRow, height, data } = this._canvasToRasterBytes(canvas);
+    const header = new Uint8Array([
+      0x1B, 0x40, // ESC @  — khởi động máy in
+      0x1D, 0x76, 0x30, 0x00, // GS v 0 0 — lệnh in ảnh raster
+      bytesPerRow & 0xFF, (bytesPerRow >> 8) & 0xFF,
+      height & 0xFF, (height >> 8) & 0xFF
+    ]);
+    const feed = new Uint8Array([0x0A, 0x0A, 0x0A, 0x0A]); // chừa giấy để xé
+    const full = new Uint8Array(header.length + data.length + feed.length);
+    full.set(header, 0);
+    full.set(data, header.length);
+    full.set(feed, header.length + data.length);
+    return full;
+  },
+
+  // In hoá đơn của 1 bàn qua BLE. tableName + table giống định dạng buildReceiptCanvas.
+  async printReceiptBLE(tableName, table){
+    if(!navigator.bluetooth){
+      throw new Error("Trình duyệt này không hỗ trợ Bluetooth (Web Bluetooth). Trên iPhone, hãy mở trang web này bằng app \"Bluefy – Web BLE Browser\" (tải miễn phí trên App Store) thay vì Safari.");
+    }
+    const canvas = this.buildReceiptCanvas(tableName, table);
+    const bytes = this._buildEscPosFromCanvas(canvas);
+
+    const device = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: [BLE_PRINTER_SERVICE_UUID]
+    });
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(BLE_PRINTER_SERVICE_UUID);
+    const characteristic = await service.getCharacteristic(BLE_PRINTER_WRITE_CHAR_UUID);
+
+    const CHUNK_SIZE = 180; // an toàn với MTU mặc định của hầu hết máy in BLE giá rẻ
+    for(let i = 0; i < bytes.length; i += CHUNK_SIZE){
+      const chunk = bytes.slice(i, i + CHUNK_SIZE);
+      if(characteristic.writeValueWithoutResponse){
+        await characteristic.writeValueWithoutResponse(chunk);
+      } else {
+        await characteristic.writeValue(chunk);
+      }
+      await new Promise(r => setTimeout(r, 20)); // chờ nhẹ để máy in kịp xử lý từng gói
+    }
+
+    try{ device.gatt.disconnect(); }catch(e){}
+    return { ok: true };
+  },
+
   // ---------- NHẬT KÝ ĐƠN HÀNG (để xuất Excel làm chứng từ) ----------
   // Mỗi khi 1 bàn được "Xong / Xoá món" hoặc "Đóng bàn" (còn món chưa thanh toán),
   // ghi lại 1 bản ghi đơn hàng đầy đủ vào localStorage, theo ngày.
@@ -342,5 +415,12 @@ const Store = {
       tableObj.items[it.name] = { qty: it.qty, price: it.price, unit: it.unit || null };
     });
     this.printReceipt(record.table, tableObj);
+  },
+  async printReceiptFromRecordBLE(record){
+    const tableObj = { guests: record.guests, items: {} };
+    record.items.forEach(it=>{
+      tableObj.items[it.name] = { qty: it.qty, price: it.price, unit: it.unit || null };
+    });
+    return this.printReceiptBLE(record.table, tableObj);
   }
 };

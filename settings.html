@@ -107,26 +107,29 @@
   <!-- ===== MÁY IN HOÁ ĐƠN ===== -->
   <div class="settings-section">
     <h2>🖨️ Kết nối máy in hoá đơn (Xprinter XP-58IIB)</h2>
-    <p class="section-desc">In hoá đơn trực tiếp từ điện thoại qua Bluetooth. Ở trang "Bàn &amp; Hoá đơn", mỗi bàn sẽ có nút <b>"🖨️ In hoá đơn"</b>.</p>
+    <p class="section-desc">In hoá đơn trực tiếp qua Bluetooth. Ở trang "Bàn &amp; Hoá đơn", mỗi bàn sẽ có nút <b>"🖨️ In hoá đơn"</b>.</p>
 
     <div class="settings-hint">
-      ⚠️ <b>Chỉ hoạt động trên điện thoại/máy tính bảng Android.</b> iPhone không hỗ trợ được do giới hạn của Apple đối với kiểu Bluetooth mà dòng máy in này dùng.
+      📱 <b>Dùng iPhone/iPad:</b> Safari không hỗ trợ in Bluetooth kiểu này, nhưng có thể dùng app trình duyệt thay thế <b>"Bluefy – Web BLE Browser"</b> (miễn phí trên App Store) để in ngay từ web, không cần app trung gian nào khác.
     </div>
 
     <div class="settings-hint" style="margin-top:10px">
-      <b>Cài đặt 1 lần duy nhất (trên điện thoại Android sẽ dùng để bấm in):</b><br><br>
-      <b>Bước 1 — Ghép nối Bluetooth như bình thường:</b><br>
-      Vào <code>Cài đặt điện thoại → Bluetooth</code> → bật máy in Xprinter → chọn tên máy in (dạng <code>Printer001</code> hoặc <code>XP-...</code>) → ghép nối, nếu hỏi mã PIN thì nhập <code>0000</code> hoặc <code>1234</code>.<br><br>
-      <b>Bước 2 — Cài app RawBT (miễn phí):</b><br>
-      Vào CH Play (Google Play), tìm và cài app tên <b>"RawBT inkless print service"</b>.<br><br>
-      <b>Bước 3 — Chọn máy in trong RawBT:</b><br>
-      Mở app RawBT → vào phần cài đặt kết nối → chọn <b>Bluetooth</b> → chọn đúng tên máy in Xprinter vừa ghép nối ở Bước 1 → lưu lại.<br><br>
-      <b>Bước 4 — Dùng thử:</b><br>
-      Quay lại trang <a href="tables.html">Bàn &amp; Hoá đơn</a>, chọn 1 bàn đang có món → bấm <b>"🖨️ In hoá đơn"</b>. Lần đầu trình duyệt sẽ hỏi mở app RawBT — chọn "Mở" (hoặc "Luôn luôn mở bằng RawBT" để lần sau khỏi hỏi lại).
+      <b>Cài đặt 1 lần trên iPhone dùng để bấm in:</b><br><br>
+      <b>Bước 1 — Cài app Bluefy:</b><br>
+      Mở App Store → tìm <b>"Bluefy – Web BLE Browser"</b> → cài (miễn phí).<br><br>
+      <b>Bước 2 — Mở trang web này bằng Bluefy (không phải Safari):</b><br>
+      Mở app Bluefy → dán đúng địa chỉ trang web này vào thanh địa chỉ → vào trang <a href="tables.html">Bàn &amp; Hoá đơn</a>.<br><br>
+      <b>Bước 3 — Bật Bluetooth &amp; bật nguồn máy in Xprinter</b> (không cần ghép nối trước trong Cài đặt điện thoại, Bluefy sẽ tự dò).<br><br>
+      <b>Bước 4 — In thử:</b><br>
+      Chọn 1 bàn đang có món → bấm <b>"🖨️ In hoá đơn"</b> → một danh sách thiết bị Bluetooth hiện ra → chọn đúng tên máy in (dạng <code>Printer001</code> hoặc <code>XP-...</code>) → bấm "Ghép nối/Pair". Lần in sau sẽ hiện lại danh sách này, chỉ cần chọn lại đúng tên máy in.
     </div>
 
     <div class="settings-hint" style="margin-top:10px">
-      💡 Muốn dùng máy tính/Windows để in thay vì điện thoại? Có thể cắm máy in qua cổng USB vào máy tính, cài driver Xprinter, rồi in trực tiếp từ trình duyệt máy tính bằng lệnh in thông thường (Ctrl+P) — cách này ổn định hơn cho quầy thu ngân cố định.
+      🤖 <b>Dùng điện thoại/máy tính bảng Android:</b> Chrome trên Android đã hỗ trợ sẵn cách in này, không cần cài thêm gì — chỉ cần bấm "🖨️ In hoá đơn" và chọn đúng máy in trong danh sách hiện ra.
+    </div>
+
+    <div class="settings-hint" style="margin-top:10px">
+      💡 Muốn dùng máy tính/Windows để in thay vì điện thoại? Có thể cắm máy in qua cổng USB vào máy tính, cài driver Xprinter, rồi in trực tiếp từ trình duyệt máy tính bằng lệnh in thông thường (Ctrl+P) — cách này ổn định hơn cho quầy thu ngân cố định. Ngoài ra Chrome/Edge trên Windows &amp; Mac cũng hỗ trợ cách in Bluetooth y hệt Android ở trên.
     </div>
   </div>
 

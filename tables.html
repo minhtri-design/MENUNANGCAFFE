@@ -174,14 +174,30 @@ async function addItemToTable(tableName, itemName, price, unit){
   }
 }
 
-function printBill(tableName){
+async function printBill(tableName){
   const tables = Store.getTables();
   const t = tables[tableName];
   if(!t || Object.keys(t.items).length === 0){
     showToast("Bàn này chưa có món để in");
     return;
   }
-  Store.printReceipt(tableName, t);
+  if(navigator.bluetooth){
+    // Trình duyệt hỗ trợ Web Bluetooth (Bluefy trên iPhone, Chrome/Edge trên Android & máy tính)
+    showToast("Đang tìm máy in — chọn tên máy in trong danh sách hiện ra...");
+    try{
+      await Store.printReceiptBLE(tableName, t);
+      showToast("Đã gửi lệnh in ✓");
+    }catch(err){
+      if(err && err.name === "NotFoundError"){
+        showToast("Bạn chưa chọn máy in trong danh sách");
+      } else {
+        showToast("In thất bại: " + (err && err.message ? err.message : "lỗi không rõ"));
+      }
+    }
+  } else {
+    // Không có Web Bluetooth (ví dụ Safari trên iPhone) → dùng cách cũ qua app RawBT (Android)
+    Store.printReceipt(tableName, t);
+  }
 }
 
 function payTable(tableName){
@@ -275,7 +291,7 @@ function renderHistory(){
   }).join('');
 }
 
-document.getElementById('historyList').addEventListener('click', (e)=>{
+document.getElementById('historyList').addEventListener('click', async (e)=>{
   const btn = e.target.closest('[data-action]');
   if(!btn) return;
   const action = btn.dataset.action;
@@ -286,7 +302,18 @@ document.getElementById('historyList').addEventListener('click', (e)=>{
     body.classList.toggle('open');
   } else if(action === 'reprint'){
     const record = Store.getOrderLog().find(r => r.id === id);
-    if(record) Store.printReceiptFromRecord(record);
+    if(!record) return;
+    if(navigator.bluetooth){
+      showToast("Đang tìm máy in — chọn tên máy in trong danh sách hiện ra...");
+      try{
+        await Store.printReceiptFromRecordBLE(record);
+        showToast("Đã gửi lệnh in ✓");
+      }catch(err){
+        showToast("In thất bại: " + (err && err.message ? err.message : "lỗi không rõ"));
+      }
+    } else {
+      Store.printReceiptFromRecord(record);
+    }
   } else if(action === 'delete-record'){
     if(!confirm("Xoá bản ghi hoá đơn này khỏi lịch sử? Không thể hoàn tác.")) return;
     Store.deleteOrderRecord(id);
