@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nắng Café — Gọi món</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="sun-mark">☀️</span>
+      <div>
+        <div class="brand-text">Nắng Café</div>
+        <div class="brand-sub">Food and Drink</div>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <a href="index.html" class="active">Gọi món</a>
+      <a href="tables.html">Bàn &amp; Hoá đơn</a>
+      <a href="settings.html">Cài đặt</a>
+    </nav>
+    <button class="cart-pill" id="cartPillBtn">
+      🛒 Gửi bàn <span class="cart-count" id="cartCount">0</span>
+    </button>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="search-wrap">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" id="searchInput" placeholder="Tìm món nhanh... ví dụ: trà đào, cacao, khoai tây">
+    <button class="search-clear" id="searchClear">✕</button>
+  </div>
+
+  <div class="cat-chips" id="catChips"></div>
+
+  <div id="menuContainer"></div>
+
+  <div class="no-results" id="noResults" style="display:none">
+    <div class="nr-icon">🔍</div>
+    <div>Không tìm thấy món nào phù hợp</div>
+  </div>
+
+</div>
+
+<div class="floating-bar" id="floatingBar">
+  <div class="fb-info"><strong id="fbCount">0</strong> món · <span id="fbTotal">0k</span></div>
+  <button class="fb-btn" id="fbSendBtn">Gửi bàn →</button>
+</div>
+
+<!-- Modal chọn bàn -->
+<div class="modal-overlay" id="tableModal">
+  <div class="modal-box" style="position:relative">
+    <button class="modal-close" id="modalCloseBtn">✕</button>
+    <div class="modal-title">Gửi đơn tới bàn nào?</div>
+    <div class="modal-sub">Chọn bàn để gán các món vừa chọn</div>
+    <div class="table-grid" id="tableGrid"></div>
+    <div class="modal-actions">
+      <button class="modal-btn secondary" id="modalCancelBtn">Huỷ</button>
+      <button class="modal-btn primary" id="modalConfirmBtn" disabled>Xác nhận</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="menu-data.js"></script>
+<script src="store.js"></script>
+<script>
+let cart = Store.getCart();
+let selectedTable = null;
+let currentMenu = Store.getMenu();
+const slugify = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'');
+
+function renderChips(){
+  const wrap = document.getElementById('catChips');
+  wrap.innerHTML = currentMenu.map(cat =>
+    `<a class="cat-chip" href="#cat-${slugify(cat.category)}">${cat.icon} ${cat.category}</a>`
+  ).join('');
+}
+
+function itemQty(name){
+  return cart[name] ? cart[name].qty : 0;
+}
+
+function renderMenu(filter=""){
+  const container = document.getElementById('menuContainer');
+  const f = filter.trim().toLowerCase();
+  let anyVisible = false;
+  let html = "";
+
+  currentMenu.forEach(cat => {
+    const filteredItems = f
+      ? cat.items.filter(it => it.name.toLowerCase().includes(f))
+      : cat.items;
+
+    if(filteredItems.length === 0) return;
+    anyVisible = true;
+
+    html += `<div class="category-section" id="cat-${slugify(cat.category)}">
+      <div class="category-title">
+        <span class="cat-icon">${cat.icon}</span>
+        <span>${cat.category}</span>
+        <span class="cat-count">${filteredItems.length} món</span>
+      </div>
+      <div class="item-grid">`;
+
+    filteredItems.forEach(it => {
+      const qty = itemQty(it.name);
+      html += `
+        <div class="menu-item ${qty>0?'has-qty':''}" data-name="${encodeURIComponent(it.name)}" data-price="${it.price}" data-unit="${it.unit||''}">
+          <div class="mi-info">
+            <div class="mi-name">${it.name}</div>
+            <div class="mi-meta">
+              <span class="mi-price">${it.price}k</span>
+              ${it.unit ? `<span class="mi-unit">/ ${it.unit}</span>` : ''}
+            </div>
+          </div>
+          <div class="mi-control">
+            <button class="mi-add-btn" data-action="add">+ Thêm</button>
+            <div class="mi-qty-badge">
+              <button class="mi-minus" data-action="minus">−</button>
+              <span class="mi-qty-num">${qty}</span>
+              <button class="mi-plus" data-action="plus">+</button>
+            </div>
+          </div>
+        </div>`;
+    });
+    html += `</div></div>`;
+  });
+
+  container.innerHTML = html;
+  document.getElementById('noResults').style.display = anyVisible ? 'none' : 'block';
+  document.getElementById('catChips').style.display = f ? 'none' : 'flex';
+}
+
+function updateCounters(){
+  const count = Store.cartCount(cart);
+  const total = Store.cartTotal(cart);
+  document.getElementById('cartCount').textContent = count;
+  document.getElementById('fbCount').textContent = count;
+  document.getElementById('fbTotal').textContent = Store.formatPrice(total);
+  document.getElementById('floatingBar').classList.toggle('show', count > 0);
+}
+
+function addOne(name, price, unit){
+  if(!cart[name]) cart[name] = { qty: 0, price, unit: unit||null };
+  cart[name].qty += 1;
+  Store.saveCart(cart);
+  updateCounters();
+  refreshItemCard(name);
+}
+
+function removeOne(name){
+  if(!cart[name]) return;
+  cart[name].qty -= 1;
+  if(cart[name].qty <= 0) delete cart[name];
+  Store.saveCart(cart);
+  updateCounters();
+  refreshItemCard(name);
+}
+
+function refreshItemCard(name){
+  const encoded = encodeURIComponent(name);
+  const el = document.querySelector(`.menu-item[data-name="${encoded}"]`);
+  if(!el) return;
+  const qty = itemQty(name);
+  el.classList.toggle('has-qty', qty>0);
+  const num = el.querySelector('.mi-qty-num');
+  if(num) num.textContent = qty;
+}
+
+document.getElementById('menuContainer').addEventListener('click', (e)=>{
+  const minusBtn = e.target.closest('.mi-minus');
+  const card = e.target.closest('.menu-item');
+  if(!card) return;
+  const name = decodeURIComponent(card.dataset.name);
+  const price = parseInt(card.dataset.price, 10);
+  const unit = card.dataset.unit;
+
+  if(minusBtn){
+    e.stopPropagation();
+    removeOne(name);
+    return;
+  }
+  addOne(name, price, unit);
+});
+
+// Search
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+searchInput.addEventListener('input', ()=>{
+  renderMenu(searchInput.value);
+  searchClear.style.display = searchInput.value ? 'flex' : 'none';
+});
+searchClear.addEventListener('click', ()=>{
+  searchInput.value = "";
+  searchClear.style.display = 'none';
+  renderMenu("");
+  searchInput.focus();
+});
+
+// Table modal
+function renderTableGrid(){
+  const tables = Store.getTables();
+  const grid = document.getElementById('tableGrid');
+  grid.innerHTML = TABLE_LIST.map(name => {
+    const occupied = tables[name] && Object.keys(tables[name].items).length > 0;
+    return `<div class="table-opt ${occupied?'occupied':''}" data-table="${name}">${name}</div>`;
+  }).join('');
+}
+
+function openModal(){
+  if(Store.cartCount(cart) === 0){
+    showToast("Bạn chưa chọn món nào");
+    return;
+  }
+  selectedTable = null;
+  renderTableGrid();
+  document.getElementById('modalConfirmBtn').disabled = true;
+  document.getElementById('tableModal').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('tableModal').classList.remove('show');
+}
+
+document.getElementById('cartPillBtn').addEventListener('click', openModal);
+document.getElementById('fbSendBtn').addEventListener('click', openModal);
+document.getElementById('modalCloseBtn').addEventListener('click', closeModal);
+document.getElementById('modalCancelBtn').addEventListener('click', closeModal);
+document.getElementById('tableModal').addEventListener('click', (e)=>{
+  if(e.target.id === 'tableModal') closeModal();
+});
+
+document.getElementById('tableGrid').addEventListener('click', (e)=>{
+  const opt = e.target.closest('.table-opt');
+  if(!opt) return;
+  document.querySelectorAll('.table-opt').forEach(o=>o.classList.remove('selected'));
+  opt.classList.add('selected');
+  selectedTable = opt.dataset.table;
+  document.getElementById('modalConfirmBtn').disabled = false;
+});
+
+document.getElementById('modalConfirmBtn').addEventListener('click', async ()=>{
+  if(!selectedTable) return;
+  const sentCart = { ...cart };
+  const updatedTable = Store.assignCartToTable(selectedTable, cart);
+  cart = {};
+  Store.clearCart();
+  updateCounters();
+  renderMenu(searchInput.value);
+  closeModal();
+  showToast(`Đã gửi đơn tới ${selectedTable} ✓`);
+
+  const settings = Store.getSettings();
+  if(settings.telegramEnabled){
+    const result = await Store.sendTelegramOrder(selectedTable, sentCart, updatedTable);
+    if(!result.ok){
+      showToast("Gửi Telegram thất bại — kiểm tra lại ở trang Cài đặt");
+    }
+  }
+});
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// init
+renderChips();
+renderMenu();
+updateCounters();
+</script>
+</body>
+</html>

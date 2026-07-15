@@ -1,0 +1,137 @@
+// Dữ liệu Menu - Nắng Café
+const MENU_DATA = [
+  {
+    category: "Coffee - Cacao - Matcha",
+    icon: "☕",
+    items: [
+      { name: "Đen Phin/Ép", price: 14 },
+      { name: "Sữa Phin/Ép", price: 16 },
+      { name: "Sữa Nóng", price: 15 },
+      { name: "Bạc Xỉu Nóng/Đá", price: 20 },
+      { name: "Cafe Kem Muối/Kem Trứng", price: 20 },
+      { name: "Cacao Sữa Nóng/Đá", price: 20 },
+      { name: "Cacao Kem Muối/ Kem Trứng", price: 25 },
+      { name: "Phindi Choco", price: 25 },
+      { name: "Matcha Kem Muối/ Kem Trứng", price: 25 },
+      { name: "Matcha Latte", price: 25 },
+      { name: "Matcha Latte Dâu/ Xoài", price: 27 }
+    ]
+  },
+  {
+    category: "Sữa Tươi",
+    icon: "🥛",
+    items: [
+      { name: "Sữa Tươi cà phê", price: 25 },
+      { name: "Sữa Tươi trân châu đường đen", price: 25 },
+      { name: "Sữa Tươi tcđđ Kem Trứng dừa nướng", price: 30 },
+      { name: "Sữa tươi tcđđ kem dẻo phô mai", price: 30 }
+    ]
+  },
+  {
+    category: "Sữa Chua",
+    icon: "🍦",
+    items: [
+      { name: "Sữa Chua Đá", price: 17 },
+      { name: "Sữa Chua Thạch", price: 20 },
+      { name: "Sữa chua Dâu Tây", price: 25 },
+      { name: "Sữa Chua Việt Quất", price: 25 },
+      { name: "Sữa Chua Dâu Tằm", price: 25 },
+      { name: "Sữa Chua Hạt Đác", price: 25 },
+      { name: "Sữa Chua Mãng Cầu", price: 25 },
+      { name: "Sữa Chua Thốt Nốt", price: 25 },
+      { name: "Sữa Chua Dâu Tằm Mãng Cầu", price: 27 },
+      { name: "Sữa Chua Dâu Tằm Hạt Đác", price: 27 }
+    ]
+  },
+  {
+    category: "Nước Ép",
+    icon: "🍊",
+    items: [
+      { name: "Thơm", price: 20 },
+      { name: "Cam", price: 20 },
+      { name: "Cà Rốt", price: 20 },
+      { name: "Ổi", price: 20 },
+      { name: "Cà Chua", price: 20 },
+      { name: "Ép Táo", price: 25 },
+      { name: "Thơm Cam", price: 25 },
+      { name: "Thơm Cà Rốt", price: 25 },
+      { name: "Nước Chanh", price: 15 },
+      { name: "Dừa", price: 20 }
+    ]
+  },
+  {
+    category: "Soda",
+    icon: "🥤",
+    items: [
+      { name: "Soda Chanh", price: 22 },
+      { name: "Soda Dâu", price: 22 },
+      { name: "Soda Việt Quất", price: 22 },
+      { name: "Soda Biển Xanh", price: 25 },
+      { name: "Soda Bạc Hà", price: 25 }
+    ]
+  },
+  {
+    category: "Trà Trái Cây",
+    icon: "🍵",
+    items: [
+      { name: "Trà chanh", price: 20 },
+      { name: "Trà Đào", price: 25 },
+      { name: "Trà Dâu Tây", price: 25 },
+      { name: "Trà Dâu Tằm", price: 25 },
+      { name: "Trà Vải", price: 25 },
+      { name: "Trà Chanh Dây", price: 25 },
+      { name: "Trà Mãng Cầu", price: 27 },
+      { name: "Trà Nho", price: 27 },
+      { name: "Ooloong Ổi Hồng", price: 27 },
+      { name: "Trà Dâu Tằm Hạt Đác", price: 27 },
+      { name: "Trà Dâu Mãng Cầu", price: 27 },
+      { name: "Trà Ô Long Sen Vàng", price: 27 },
+      { name: "Trà Gừng", price: 15 },
+      { name: "Trà Gừng Thảo Mộc", price: 20 },
+      { name: "Trà Lipton Thảo Mộc", price: 20 }
+    ]
+  },
+  {
+    category: "Trà Sữa",
+    icon: "🧋",
+    items: [
+      { name: "Trà Sữa Truyền Thống", price: 22 },
+      { name: "Trà Sữa Thái Xanh", price: 22 },
+      { name: "Trà Sữa Matcha", price: 25 },
+      { name: "Trà Sữa Matcha Kem Trứng/ Kem Dẻo Phô Mai", price: 30 },
+      { name: "Trà Sữa Khoai Môn", price: 25 },
+      { name: "Trà Sữa Khoai Môn Kem Trứng/ Kem Dẻo Phô Mai", price: 30 },
+      { name: "Trà Sữa Socola", price: 25 },
+      { name: "Trà Sữa Socola Kem Trứng/ kem Dẻo Phô Mai", price: 30 },
+      { name: "Trà Sữa Ô Long", price: 27 },
+      { name: "Trà Sữa TCĐĐ Kem Trứng Dừa Nướng/ Kem Dẻo Phô Mai", price: 30 }
+    ]
+  },
+  {
+    category: "Nước Ngọt",
+    icon: "🧃",
+    items: [
+      { name: "Vĩnh Hảo", price: 10 },
+      { name: "Pepsi", price: 15 },
+      { name: "Number One", price: 15 },
+      { name: "Stingg", price: 15 },
+      { name: "Nutri", price: 15 },
+      { name: "Trà Xanh", price: 15 },
+      { name: "Bò Húc", price: 20 }
+    ]
+  },
+  {
+    category: "Ăn Vặt Chill Chill",
+    icon: "🍟",
+    items: [
+      { name: "Hạt Dưa", price: 12 },
+      { name: "Hạt Hướng Dương", price: 12 },
+      { name: "Cá Viên Chiên", price: 40, unit: "phần" },
+      { name: "Bò Viên Chiên", price: 40, unit: "phần" },
+      { name: "Tôm Viên Chiên", price: 40, unit: "phần" },
+      { name: "Khoai Tây Chiên", price: 30, unit: "phần" },
+      { name: "Xúc Xích", price: 30, unit: "3 cây" },
+      { name: "Phô Mai Que", price: 30, unit: "3 cây" }
+    ]
+  }
+];

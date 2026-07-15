@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nắng Café — Cài đặt</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="sun-mark">☀️</span>
+      <div>
+        <div class="brand-text">Nắng Café</div>
+        <div class="brand-sub">Food and Drink</div>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <a href="index.html">Gọi món</a>
+      <a href="tables.html">Bàn &amp; Hoá đơn</a>
+      <a href="settings.html" class="active">Cài đặt</a>
+    </nav>
+    <div style="width:110px"></div>
+  </div>
+</div>
+
+<div class="page">
+
+  <div class="settings-header">
+    <h1>Cài đặt</h1>
+    <p>Sửa giá, thêm/xoá món, và kết nối Telegram + nhận thanh toán VietQR.</p>
+  </div>
+
+  <!-- ===== QUẢN LÝ MENU ===== -->
+  <div class="settings-section">
+    <h2>🍽️ Quản lý menu</h2>
+    <p class="section-desc">Sửa trực tiếp tên món, giá, đơn vị — tự động lưu. Có thể thêm món mới hoặc thêm cả nhóm món mới.</p>
+    <div id="menuAdmin"></div>
+    <div class="settings-actions" style="margin-top:14px">
+      <button class="btn-danger-outline" id="resetMenuBtn">Khôi phục menu gốc</button>
+    </div>
+  </div>
+
+  <!-- ===== TELEGRAM ===== -->
+  <div class="settings-section">
+    <h2>📨 Báo đơn qua Telegram</h2>
+    <p class="section-desc">Khi có bàn gọi món, hệ thống tự động gửi tin nhắn liệt kê món + tổng tiền, kèm mã QR thanh toán đúng số tiền.</p>
+
+    <label class="checkbox-row">
+      <input type="checkbox" id="tgEnabled">
+      Bật thông báo tự động qua Telegram
+    </label>
+
+    <div class="field-group">
+      <label>Bot Token</label>
+      <input type="text" id="tgToken" placeholder="123456789:AAExample-BotTokenHere">
+    </div>
+    <div class="field-group">
+      <label>Chat ID</label>
+      <input type="text" id="tgChatId" placeholder="-1001234567890 hoặc 123456789">
+    </div>
+
+    <div class="settings-actions">
+      <button class="btn-secondary" id="tgTestBtn">Gửi thử tin nhắn</button>
+    </div>
+
+    <div class="settings-hint">
+      <b>Cách lấy Bot Token &amp; Chat ID:</b><br>
+      1. Mở Telegram, tìm <code>@BotFather</code> → gõ <code>/newbot</code> → làm theo hướng dẫn để lấy <b>Bot Token</b>.<br>
+      2. Thêm bot vừa tạo vào nhóm nhân viên (hoặc chat riêng với bot), gửi thử 1 tin nhắn bất kỳ.<br>
+      3. Mở trình duyệt, truy cập: <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code> — tìm số ở mục <code>"chat":{"id": ...}</code>, đó là <b>Chat ID</b>.
+    </div>
+  </div>
+
+  <!-- ===== VIETQR ===== -->
+  <div class="settings-section">
+    <h2>💳 Nhận thanh toán (VietQR)</h2>
+    <p class="section-desc">Mã QR sẽ tự tạo đúng số tiền của mỗi hoá đơn, đính kèm trong tin nhắn Telegram.</p>
+
+    <div class="field-group">
+      <label>Ngân hàng</label>
+      <select id="bankSelect"></select>
+    </div>
+    <div class="field-group">
+      <label>Số tài khoản</label>
+      <input type="text" id="bankAccount" placeholder="Ví dụ: 0123456789">
+    </div>
+    <div class="field-group">
+      <label>Tên chủ tài khoản</label>
+      <input type="text" id="bankName" placeholder="VD: NGUYEN VAN A (không dấu, viết hoa)">
+    </div>
+
+    <div class="settings-hint">
+      Không thấy ngân hàng của bạn? Chọn <b>"Khác — nhập mã BIN thủ công"</b> rồi tra mã BIN tại
+      <code>vietqr.io</code>.
+    </div>
+    <div class="field-group" id="customBinWrap" style="display:none; margin-top:12px">
+      <label>Mã BIN ngân hàng</label>
+      <input type="text" id="bankBinCustom" placeholder="Ví dụ: 970436">
+    </div>
+  </div>
+
+  <div class="settings-actions">
+    <button class="btn-primary" id="saveSettingsBtn">Lưu cài đặt</button>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="menu-data.js"></script>
+<script src="store.js"></script>
+<script>
+// ============ QUẢN LÝ MENU ============
+function renderMenuAdmin(){
+  const menu = Store.getMenu();
+  const wrap = document.getElementById('menuAdmin');
+  wrap.innerHTML = menu.map((cat, ci) => `
+    <div class="admin-cat" data-ci="${ci}">
+      <div class="admin-cat-head">
+        <input class="admin-cat-name" data-ci="${ci}" value="${Store.escapeHtml(cat.category)}">
+        <button class="admin-cat-del" data-action="del-cat" data-ci="${ci}">Xoá nhóm</button>
+      </div>
+      <div class="admin-items">
+        ${cat.items.map((it, ii) => `
+          <div class="admin-item-row" data-ci="${ci}" data-ii="${ii}">
+            <input class="ai-name" data-ci="${ci}" data-ii="${ii}" data-field="name" value="${Store.escapeHtml(it.name)}" placeholder="Tên món">
+            <input class="ai-price" type="number" min="0" data-ci="${ci}" data-ii="${ii}" data-field="price" value="${it.price}">
+            <span class="ai-k">k</span>
+            <input class="ai-unit" data-ci="${ci}" data-ii="${ii}" data-field="unit" value="${it.unit||''}" placeholder="đơn vị (vd: phần)">
+            <button class="ai-del" data-action="del-item" data-ci="${ci}" data-ii="${ii}">✕</button>
+          </div>
+        `).join('')}
+      </div>
+      <button class="admin-add-item" data-action="add-item" data-ci="${ci}">+ Thêm món vào nhóm này</button>
+    </div>
+  `).join('') + `<button class="admin-add-cat" id="addCatBtn">+ Thêm nhóm món mới</button>`;
+}
+
+function getMenuFresh(){ return Store.getMenu(); }
+
+document.getElementById('menuAdmin').addEventListener('input', (e)=>{
+  const input = e.target;
+  const ci = input.dataset.ci, ii = input.dataset.ii, field = input.dataset.field;
+  const menu = getMenuFresh();
+
+  if(input.classList.contains('admin-cat-name')){
+    menu[ci].category = input.value;
+    Store.saveMenu(menu);
+    return;
+  }
+  if(field){
+    const cat = menu[ci];
+    if(field === 'price'){
+      cat.items[ii].price = parseInt(input.value, 10) || 0;
+    } else if(field === 'unit'){
+      cat.items[ii].unit = input.value.trim() || null;
+    } else {
+      cat.items[ii].name = input.value;
+    }
+    Store.saveMenu(menu);
+  }
+});
+
+document.getElementById('menuAdmin').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  const menu = getMenuFresh();
+
+  if(action === 'del-item'){
+    const ci = btn.dataset.ci, ii = btn.dataset.ii;
+    if(!confirm(`Xoá món "${menu[ci].items[ii].name}"?`)) return;
+    menu[ci].items.splice(ii, 1);
+    Store.saveMenu(menu);
+    renderMenuAdmin();
+  } else if(action === 'del-cat'){
+    const ci = btn.dataset.ci;
+    if(!confirm(`Xoá cả nhóm "${menu[ci].category}" và toàn bộ món trong đó?`)) return;
+    menu.splice(ci, 1);
+    Store.saveMenu(menu);
+    renderMenuAdmin();
+  } else if(action === 'add-item'){
+    const ci = btn.dataset.ci;
+    menu[ci].items.push({ name: "Món mới", price: 0, unit: null });
+    Store.saveMenu(menu);
+    renderMenuAdmin();
+    showToast("Đã thêm món — hãy sửa tên và giá");
+  } else if(btn.id === 'addCatBtn'){
+    menu.push({ category: "Nhóm mới", icon: "🍽️", items: [{ name: "Món mới", price: 0, unit: null }] });
+    Store.saveMenu(menu);
+    renderMenuAdmin();
+    showToast("Đã thêm nhóm món mới");
+  }
+});
+
+document.getElementById('resetMenuBtn').addEventListener('click', ()=>{
+  if(!confirm("Khôi phục toàn bộ menu về mặc định ban đầu? Mọi chỉnh sửa sẽ mất.")) return;
+  Store.resetMenu();
+  renderMenuAdmin();
+  showToast("Đã khôi phục menu gốc");
+});
+
+// ============ TELEGRAM + VIETQR SETTINGS ============
+function renderBankSelect(selectedBin){
+  const sel = document.getElementById('bankSelect');
+  sel.innerHTML = VIETQR_BANKS.map(b =>
+    `<option value="${b.bin}">${b.name}</option>`
+  ).join('') + `<option value="custom">Khác — nhập mã BIN thủ công</option>`;
+
+  const known = VIETQR_BANKS.some(b => b.bin === selectedBin);
+  if(selectedBin && known){
+    sel.value = selectedBin;
+    document.getElementById('customBinWrap').style.display = 'none';
+  } else if(selectedBin){
+    sel.value = "custom";
+    document.getElementById('bankBinCustom').value = selectedBin;
+    document.getElementById('customBinWrap').style.display = 'block';
+  }
+}
+
+document.getElementById('bankSelect').addEventListener('change', (e)=>{
+  document.getElementById('customBinWrap').style.display = e.target.value === 'custom' ? 'block' : 'none';
+});
+
+function loadSettingsToForm(){
+  const s = Store.getSettings();
+  document.getElementById('tgEnabled').checked = !!s.telegramEnabled;
+  document.getElementById('tgToken').value = s.telegramToken || '';
+  document.getElementById('tgChatId').value = s.telegramChatId || '';
+  document.getElementById('bankAccount').value = s.bankAccount || '';
+  document.getElementById('bankName').value = s.bankAccountName || '';
+  renderBankSelect(s.bankBin || '');
+}
+
+function collectSettingsFromForm(){
+  const bankSelectVal = document.getElementById('bankSelect').value;
+  const bankBin = bankSelectVal === 'custom'
+    ? document.getElementById('bankBinCustom').value.trim()
+    : bankSelectVal;
+  return {
+    telegramEnabled: document.getElementById('tgEnabled').checked,
+    telegramToken: document.getElementById('tgToken').value.trim(),
+    telegramChatId: document.getElementById('tgChatId').value.trim(),
+    bankBin: bankBin,
+    bankAccount: document.getElementById('bankAccount').value.trim(),
+    bankAccountName: document.getElementById('bankName').value.trim().toUpperCase()
+  };
+}
+
+document.getElementById('saveSettingsBtn').addEventListener('click', ()=>{
+  const s = collectSettingsFromForm();
+  if(s.telegramEnabled && (!s.telegramToken || !s.telegramChatId)){
+    showToast("Cần nhập Bot Token và Chat ID để bật thông báo");
+    return;
+  }
+  Store.saveSettings(s);
+  showToast("Đã lưu cài đặt ✓");
+});
+
+document.getElementById('tgTestBtn').addEventListener('click', async ()=>{
+  const s = collectSettingsFromForm();
+  if(!s.telegramToken || !s.telegramChatId){
+    showToast("Nhập Bot Token và Chat ID trước đã");
+    return;
+  }
+  Store.saveSettings(s);
+  const btn = document.getElementById('tgTestBtn');
+  btn.disabled = true;
+  btn.textContent = "Đang gửi...";
+  const result = await Store.sendTelegramOrder("Bàn thử nghiệm", { "Trà Đào": { qty:1, price:25, unit:null } }, { guests:1, items:{ "Trà Đào": { qty:1, price:25, unit:null } } });
+  btn.disabled = false;
+  btn.textContent = "Gửi thử tin nhắn";
+  showToast(result.ok ? "Gửi thành công ✓ — kiểm tra Telegram" : "Gửi thất bại — kiểm tra lại Token/Chat ID");
+});
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2400);
+}
+
+renderMenuAdmin();
+loadSettingsToForm();
+</script>
+</body>
+</html>

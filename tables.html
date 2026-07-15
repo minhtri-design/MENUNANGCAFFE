@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nắng Café — Bàn &amp; Hoá đơn</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <span class="sun-mark">☀️</span>
+      <div>
+        <div class="brand-text">Nắng Café</div>
+        <div class="brand-sub">Food and Drink</div>
+      </div>
+    </div>
+    <nav class="nav-tabs">
+      <a href="index.html">Gọi món</a>
+      <a href="tables.html" class="active">Bàn &amp; Hoá đơn</a>
+      <a href="settings.html">Cài đặt</a>
+    </nav>
+    <div style="width:110px"></div>
+  </div>
+</div>
+
+<div class="page">
+  <div class="tables-header">
+    <h1>Các bàn đang phục vụ</h1>
+    <div class="summary-strip">
+      <div>Số bàn: <b id="sumTables">0</b></div>
+      <div>Tổng khách: <b id="sumGuests">0</b></div>
+      <div>Doanh thu: <b id="sumRevenue">0k</b></div>
+    </div>
+  </div>
+
+  <div id="tablesGrid" class="tables-grid"></div>
+
+  <div class="empty-tables" id="emptyState" style="display:none">
+    <div class="et-icon">🪑</div>
+    <h3>Chưa có bàn nào gọi món</h3>
+    <div>Qua trang <a href="index.html" style="text-decoration:underline">Gọi món</a> để bắt đầu order</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="menu-data.js"></script>
+<script src="store.js"></script>
+<script>
+const ALL_ITEMS = Store.getMenu().flatMap(cat => cat.items.map(it => ({...it, category: cat.category})));
+
+function render(){
+  const tables = Store.getTables();
+  const grid = document.getElementById('tablesGrid');
+  const activeNames = Object.keys(tables).filter(name => Object.keys(tables[name].items).length > 0);
+
+  if(activeNames.length === 0){
+    grid.innerHTML = "";
+    document.getElementById('emptyState').style.display = 'block';
+  } else {
+    document.getElementById('emptyState').style.display = 'none';
+    grid.innerHTML = activeNames.sort().map(name => renderTableCard(name, tables[name])).join('');
+  }
+
+  // Summary
+  let totalGuests = 0, totalRevenue = 0;
+  activeNames.forEach(name=>{
+    totalGuests += tables[name].guests || 0;
+    totalRevenue += Store.tableTotal(tables[name]);
+  });
+  document.getElementById('sumTables').textContent = activeNames.length;
+  document.getElementById('sumGuests').textContent = totalGuests;
+  document.getElementById('sumRevenue').textContent = Store.formatPrice(totalRevenue);
+}
+
+function renderTableCard(name, table){
+  const items = Object.entries(table.items);
+  const total = Store.tableTotal(table);
+  const itemsHtml = items.length ? items.map(([itemName, it])=>`
+    <div class="tc-line">
+      <div class="tc-line-name">${itemName}${it.unit?`<div class="tc-line-price">${it.price}k / ${it.unit}</div>`:`<div class="tc-line-price">${it.price}k</div>`}</div>
+      <div class="tc-qty-control">
+        <button data-action="dec" data-table="${encodeURIComponent(name)}" data-item="${encodeURIComponent(itemName)}">−</button>
+        <span class="tc-qty-num">${it.qty}</span>
+        <button data-action="inc" data-table="${encodeURIComponent(name)}" data-item="${encodeURIComponent(itemName)}">+</button>
+      </div>
+    </div>
+  `).join('') : `<div class="tc-empty">Chưa có món</div>`;
+
+  const options = ALL_ITEMS.map(it => `<option value="${encodeURIComponent(it.name)}" data-price="${it.price}" data-unit="${it.unit||''}">${it.name} — ${it.price}k</option>`).join('');
+
+  return `
+  <div class="table-card" data-table="${encodeURIComponent(name)}">
+    <div class="tc-head">
+      <div class="tc-name">${name}</div>
+      <div class="tc-guests">
+        👤 <span class="tc-guests-num">${table.guests}</span>
+        <button data-action="guest-dec" data-table="${encodeURIComponent(name)}">−</button>
+        <button data-action="guest-inc" data-table="${encodeURIComponent(name)}">+</button>
+      </div>
+    </div>
+    <div class="tc-body">${itemsHtml}</div>
+    <div class="add-item-row">
+      <select class="add-item-select" data-table="${encodeURIComponent(name)}">
+        <option value="">+ Thêm món khác...</option>
+        ${options}
+      </select>
+    </div>
+    <div class="tc-footer">
+      <div class="tc-total">${Store.formatPrice(total)}</div>
+      <div class="tc-actions">
+        <button class="tc-icon-btn" data-action="clear-items" data-table="${encodeURIComponent(name)}">Xong / Xoá món</button>
+        <button class="tc-icon-btn danger" data-action="close-table" data-table="${encodeURIComponent(name)}">Đóng bàn</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function updateItem(tableName, itemName, delta){
+  const tables = Store.getTables();
+  const t = tables[tableName];
+  if(!t || !t.items[itemName]) return;
+  t.items[itemName].qty += delta;
+  if(t.items[itemName].qty <= 0) delete t.items[itemName];
+  Store.saveTables(tables);
+  render();
+}
+
+function updateGuests(tableName, delta){
+  const tables = Store.getTables();
+  const t = tables[tableName];
+  if(!t) return;
+  t.guests = Math.max(1, (t.guests||1) + delta);
+  Store.saveTables(tables);
+  render();
+}
+
+async function addItemToTable(tableName, itemName, price, unit){
+  const tables = Store.getTables();
+  if(!tables[tableName]) tables[tableName] = { guests:1, items:{} };
+  const t = tables[tableName];
+  if(t.items[itemName]) t.items[itemName].qty += 1;
+  else t.items[itemName] = { qty:1, price, unit: unit||null };
+  Store.saveTables(tables);
+  render();
+
+  const settings = Store.getSettings();
+  if(settings.telegramEnabled){
+    const newItems = { [itemName]: { qty:1, price, unit: unit||null } };
+    const result = await Store.sendTelegramOrder(tableName, newItems, tables[tableName]);
+    if(!result.ok) showToast("Gửi Telegram thất bại — kiểm tra ở trang Cài đặt");
+  }
+}
+
+function clearTableItems(tableName){
+  if(!confirm(`Xoá hết món của ${tableName}? (Bàn vẫn giữ, chỉ xoá đơn hàng đã lên)`)) return;
+  const tables = Store.getTables();
+  if(tables[tableName]){
+    tables[tableName].items = {};
+    Store.saveTables(tables);
+  }
+  render();
+  showToast(`${tableName} đã được thanh toán ✓`);
+}
+
+function closeTable(tableName){
+  if(!confirm(`Đóng ${tableName}? Toàn bộ đơn hàng và số khách sẽ được xoá.`)) return;
+  const tables = Store.getTables();
+  delete tables[tableName];
+  Store.saveTables(tables);
+  render();
+  showToast(`Đã đóng ${tableName}`);
+}
+
+document.getElementById('tablesGrid').addEventListener('click', (e)=>{
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  const tableName = decodeURIComponent(btn.dataset.table);
+
+  if(action === 'inc') updateItem(tableName, decodeURIComponent(btn.dataset.item), 1);
+  else if(action === 'dec') updateItem(tableName, decodeURIComponent(btn.dataset.item), -1);
+  else if(action === 'guest-inc') updateGuests(tableName, 1);
+  else if(action === 'guest-dec') updateGuests(tableName, -1);
+  else if(action === 'clear-items') clearTableItems(tableName);
+  else if(action === 'close-table') closeTable(tableName);
+});
+
+document.getElementById('tablesGrid').addEventListener('change', (e)=>{
+  const select = e.target.closest('.add-item-select');
+  if(!select || !select.value) return;
+  const tableName = decodeURIComponent(select.dataset.table);
+  const itemName = decodeURIComponent(select.value);
+  const opt = select.selectedOptions[0];
+  const price = parseInt(opt.dataset.price, 10);
+  const unit = opt.dataset.unit;
+  addItemToTable(tableName, itemName, price, unit);
+  select.value = "";
+});
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+render();
+// Refresh khi quay lại tab (nếu mở 2 tab cùng lúc)
+window.addEventListener('storage', render);
+</script>
+</body>
+</html>
