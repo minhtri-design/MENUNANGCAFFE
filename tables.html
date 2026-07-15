@@ -52,6 +52,15 @@
     <h3>Chưa có bàn nào gọi món</h3>
     <div>Qua trang <a href="index.html" style="text-decoration:underline">Gọi món</a> để bắt đầu order</div>
   </div>
+
+  <div class="history-section">
+    <div class="history-header">
+      <h2>🧾 Lịch sử hoá đơn đã thanh toán</h2>
+      <button class="btn-danger-outline" id="clearHistoryBtn">Xoá toàn bộ lịch sử</button>
+    </div>
+    <div id="historyList"></div>
+    <div class="tc-empty" id="historyEmpty" style="display:none">Chưa có hoá đơn nào được lưu lại</div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -122,6 +131,7 @@ function renderTableCard(name, table){
     <div class="tc-footer">
       <div class="tc-total">${Store.formatPrice(total)}</div>
       <div class="tc-actions">
+        <button class="tc-icon-btn" data-action="print-bill" data-table="${encodeURIComponent(name)}">🖨️ In hoá đơn</button>
         <button class="tc-icon-btn success" data-action="pay-table" data-table="${encodeURIComponent(name)}">✓ Đã thanh toán</button>
       </div>
     </div>
@@ -164,6 +174,16 @@ async function addItemToTable(tableName, itemName, price, unit){
   }
 }
 
+function printBill(tableName){
+  const tables = Store.getTables();
+  const t = tables[tableName];
+  if(!t || Object.keys(t.items).length === 0){
+    showToast("Bàn này chưa có món để in");
+    return;
+  }
+  Store.printReceipt(tableName, t);
+}
+
 function payTable(tableName){
   const tables = Store.getTables();
   const t = tables[tableName];
@@ -178,6 +198,7 @@ function payTable(tableName){
   t.guests = 1; // reset để sẵn sàng cho nhóm khách tiếp theo
   Store.saveTables(tables);
   render();
+  renderHistory();
   showToast(`${tableName} đã thanh toán ✓ — hoá đơn đã lưu, sẵn sàng đón khách mới`);
 }
 
@@ -192,6 +213,7 @@ document.getElementById('tablesGrid').addEventListener('click', (e)=>{
   else if(action === 'guest-inc') updateGuests(tableName, 1);
   else if(action === 'guest-dec') updateGuests(tableName, -1);
   else if(action === 'pay-table') payTable(tableName);
+  else if(action === 'print-bill') printBill(tableName);
 });
 
 document.getElementById('tablesGrid').addEventListener('change', (e)=>{
@@ -212,6 +234,73 @@ function showToast(msg){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
+
+// ---------- LỊCH SỬ HOÁ ĐƠN (đã thanh toán) ----------
+function renderHistory(){
+  const log = Store.getOrderLog().slice().sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+  const wrap = document.getElementById('historyList');
+
+  if(log.length === 0){
+    wrap.innerHTML = "";
+    document.getElementById('historyEmpty').style.display = 'block';
+    return;
+  }
+  document.getElementById('historyEmpty').style.display = 'none';
+
+  wrap.innerHTML = log.map(r => {
+    const itemsHtml = r.items.map(it => `
+      <div class="tc-line">
+        <div class="tc-line-name">${it.name}${it.unit?`<div class="tc-line-price">${it.price}k / ${it.unit}</div>`:`<div class="tc-line-price">${it.price}k</div>`}</div>
+        <div>${it.qty} × ${it.price}k = <b>${it.lineTotal}k</b></div>
+      </div>
+    `).join('');
+
+    return `
+    <div class="history-card">
+      <div class="hc-head" data-action="toggle" data-id="${r.id}">
+        <div>
+          <div class="hc-table">${r.table}</div>
+          <div class="hc-time">${r.date} · ${r.time} · ${r.guests} khách</div>
+        </div>
+        <div class="hc-total">${r.total.toLocaleString('vi-VN')}k</div>
+      </div>
+      <div class="hc-body" id="hc-body-${r.id}">
+        ${itemsHtml}
+        <div class="hc-actions">
+          <button class="tc-icon-btn" data-action="reprint" data-id="${r.id}">🖨️ In lại</button>
+          <button class="tc-icon-btn danger" data-action="delete-record" data-id="${r.id}">Xoá bản ghi</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+document.getElementById('historyList').addEventListener('click', (e)=>{
+  const btn = e.target.closest('[data-action]');
+  if(!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+
+  if(action === 'toggle'){
+    const body = document.getElementById(`hc-body-${id}`);
+    body.classList.toggle('open');
+  } else if(action === 'reprint'){
+    const record = Store.getOrderLog().find(r => r.id === id);
+    if(record) Store.printReceiptFromRecord(record);
+  } else if(action === 'delete-record'){
+    if(!confirm("Xoá bản ghi hoá đơn này khỏi lịch sử? Không thể hoàn tác.")) return;
+    Store.deleteOrderRecord(id);
+    renderHistory();
+    showToast("Đã xoá bản ghi");
+  }
+});
+
+document.getElementById('clearHistoryBtn').addEventListener('click', ()=>{
+  if(!confirm("Xoá TOÀN BỘ lịch sử hoá đơn? Không thể hoàn tác — nên xuất Excel lưu lại trước khi xoá.")) return;
+  Store.clearOrderLog();
+  renderHistory();
+  showToast("Đã xoá toàn bộ lịch sử");
+});
 
 // ---------- Xuất Excel (chứng từ doanh thu) ----------
 function buildDetailRows(records){
@@ -275,8 +364,9 @@ document.getElementById('exportAllBtn').addEventListener('click', ()=>{
 document.getElementById('exportDate').value = Store.todayStr();
 
 render();
+renderHistory();
 // Refresh khi quay lại tab (nếu mở 2 tab cùng lúc)
-window.addEventListener('storage', render);
+window.addEventListener('storage', ()=>{ render(); renderHistory(); });
 </script>
 <script id="no-zoom-lock">
 // Chặn zoom bằng Ctrl + lăn chuột / Ctrl + phím + - (chỉ desktop, không ảnh hưởng cảm ứng)

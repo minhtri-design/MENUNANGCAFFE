@@ -541,6 +541,8 @@ a{color:inherit;}
   padding:14px 18px;
   background:var(--paper-2);
   display:flex; justify-content:space-between; align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
 }
 .tc-total{
   font-family:'Fraunces',serif;
@@ -548,7 +550,7 @@ a{color:inherit;}
   font-weight:700;
   color:var(--clay);
 }
-.tc-actions{ display:flex; gap:8px; }
+.tc-actions{ display:flex; gap:8px; flex-wrap:wrap; }
 .tc-icon-btn{
   background:var(--white);
   border:1px solid var(--line);
@@ -558,6 +560,7 @@ a{color:inherit;}
   font-weight:700;
   cursor:pointer;
   color:var(--ink);
+  white-space:nowrap;
 }
 .tc-icon-btn.danger{ color:var(--clay); border-color:#EBC9BA; }
 .tc-icon-btn.success{
@@ -567,6 +570,12 @@ a{color:inherit;}
 }
 .tc-icon-btn.success:hover{ opacity:0.9; background:var(--sage); }
 .tc-icon-btn:hover{ background:var(--paper); }
+
+@media (max-width:420px){
+  .tc-footer{ flex-direction:column; align-items:stretch; }
+  .tc-actions{ width:100%; }
+  .tc-icon-btn{ flex:1; text-align:center; }
+}
 
 .add-item-row{
   padding:12px 18px;
@@ -589,6 +598,66 @@ a{color:inherit;}
 }
 .empty-tables .et-icon{ font-size:48px; margin-bottom:12px; }
 .empty-tables h3{ font-family:'Fraunces',serif; color:var(--ink); font-size:20px; }
+
+/* ===================== LỊCH SỬ HOÁ ĐƠN ===================== */
+.history-section{
+  margin-top:40px;
+  padding-top:24px;
+  border-top:2px solid var(--ink);
+}
+.history-header{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:16px; flex-wrap:wrap; gap:10px;
+}
+.history-header h2{
+  font-family:'Fraunces',serif;
+  font-size:21px;
+  margin:0;
+}
+.history-card{
+  background:var(--white);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  margin-bottom:10px;
+  overflow:hidden;
+}
+.hc-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:14px 18px;
+  cursor:pointer;
+  gap:12px;
+}
+.hc-head:hover{ background:var(--paper-2); }
+.hc-table{
+  font-family:'Fraunces',serif;
+  font-weight:600;
+  font-size:16px;
+  color:var(--ink);
+}
+.hc-time{
+  font-size:12px;
+  color:var(--ink-soft);
+  margin-top:2px;
+}
+.hc-total{
+  font-family:'Fraunces',serif;
+  font-weight:700;
+  font-size:17px;
+  color:var(--clay);
+  flex-shrink:0;
+}
+.hc-body{
+  display:none;
+  padding:0 18px 16px;
+  border-top:1px dashed var(--line);
+}
+.hc-body.open{ display:block; }
+.hc-body .tc-line{
+  font-size:13.5px;
+}
+.hc-actions{
+  display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;
+}
 
 /* ===================== SETTINGS PAGE ===================== */
 .settings-header{ margin-bottom:24px; }

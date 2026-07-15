@@ -104,6 +104,32 @@
     </div>
   </div>
 
+  <!-- ===== MÁY IN HOÁ ĐƠN ===== -->
+  <div class="settings-section">
+    <h2>🖨️ Kết nối máy in hoá đơn (Xprinter XP-58IIB)</h2>
+    <p class="section-desc">In hoá đơn trực tiếp từ điện thoại qua Bluetooth. Ở trang "Bàn &amp; Hoá đơn", mỗi bàn sẽ có nút <b>"🖨️ In hoá đơn"</b>.</p>
+
+    <div class="settings-hint">
+      ⚠️ <b>Chỉ hoạt động trên điện thoại/máy tính bảng Android.</b> iPhone không hỗ trợ được do giới hạn của Apple đối với kiểu Bluetooth mà dòng máy in này dùng.
+    </div>
+
+    <div class="settings-hint" style="margin-top:10px">
+      <b>Cài đặt 1 lần duy nhất (trên điện thoại Android sẽ dùng để bấm in):</b><br><br>
+      <b>Bước 1 — Ghép nối Bluetooth như bình thường:</b><br>
+      Vào <code>Cài đặt điện thoại → Bluetooth</code> → bật máy in Xprinter → chọn tên máy in (dạng <code>Printer001</code> hoặc <code>XP-...</code>) → ghép nối, nếu hỏi mã PIN thì nhập <code>0000</code> hoặc <code>1234</code>.<br><br>
+      <b>Bước 2 — Cài app RawBT (miễn phí):</b><br>
+      Vào CH Play (Google Play), tìm và cài app tên <b>"RawBT inkless print service"</b>.<br><br>
+      <b>Bước 3 — Chọn máy in trong RawBT:</b><br>
+      Mở app RawBT → vào phần cài đặt kết nối → chọn <b>Bluetooth</b> → chọn đúng tên máy in Xprinter vừa ghép nối ở Bước 1 → lưu lại.<br><br>
+      <b>Bước 4 — Dùng thử:</b><br>
+      Quay lại trang <a href="tables.html">Bàn &amp; Hoá đơn</a>, chọn 1 bàn đang có món → bấm <b>"🖨️ In hoá đơn"</b>. Lần đầu trình duyệt sẽ hỏi mở app RawBT — chọn "Mở" (hoặc "Luôn luôn mở bằng RawBT" để lần sau khỏi hỏi lại).
+    </div>
+
+    <div class="settings-hint" style="margin-top:10px">
+      💡 Muốn dùng máy tính/Windows để in thay vì điện thoại? Có thể cắm máy in qua cổng USB vào máy tính, cài driver Xprinter, rồi in trực tiếp từ trình duyệt máy tính bằng lệnh in thông thường (Ctrl+P) — cách này ổn định hơn cho quầy thu ngân cố định.
+    </div>
+  </div>
+
   <div class="settings-actions">
     <button class="btn-primary" id="saveSettingsBtn">Lưu cài đặt</button>
   </div>

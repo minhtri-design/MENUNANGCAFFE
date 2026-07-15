@@ -188,6 +188,107 @@ const Store = {
     return Object.values(table.items).reduce((s,it)=>s+it.qty*it.price,0);
   },
 
+  // ---------- IN HOÁ ĐƠN (qua app RawBT trên Android, kết nối Bluetooth/USB) ----------
+  // In bằng ẢNH (không phải text ESC/POS thô) để tiếng Việt có dấu luôn hiển thị đúng,
+  // không phụ thuộc bảng mã (codepage) của từng dòng máy in.
+  _wrapCanvasText(ctx, text, maxWidth){
+    const words = String(text).split(' ');
+    const lines = [];
+    let current = '';
+    words.forEach(w=>{
+      const test = current ? current + ' ' + w : w;
+      if(ctx.measureText(test).width > maxWidth && current){
+        lines.push(current);
+        current = w;
+      } else {
+        current = test;
+      }
+    });
+    if(current) lines.push(current);
+    return lines;
+  },
+
+  buildReceiptCanvas(tableName, table){
+    const W = 384; // 58mm ở ~203dpi — đúng khổ giấy máy in nhiệt 58mm
+    const PAD = 14;
+    const contentW = W - PAD*2;
+    const now = new Date();
+
+    // canvas nháp chỉ để đo chữ (chưa vẽ thật)
+    const measureCanvas = document.createElement('canvas');
+    const mctx = measureCanvas.getContext('2d');
+
+    const items = Object.entries(table.items || {});
+    const lines = []; // { text, font, align, gapAfter }
+
+    lines.push({ text:"NẮNG CAFÉ", font:"bold 26px Arial", align:"center", gap:6 });
+    lines.push({ text:"Food and Drink", font:"14px Arial", align:"center", gap:10 });
+    lines.push({ text:"-".repeat(32), font:"14px Arial", align:"center", gap:8 });
+    lines.push({ text:tableName, font:"bold 20px Arial", align:"left", gap:4 });
+    lines.push({ text:`${now.toLocaleDateString('vi-VN')}  ${now.toLocaleTimeString('vi-VN')}`, font:"13px Arial", align:"left", gap:10 });
+    lines.push({ text:"-".repeat(32), font:"14px Arial", align:"center", gap:10 });
+
+    if(items.length === 0){
+      lines.push({ text:"(Chưa có món)", font:"14px Arial", align:"center", gap:10 });
+    }
+    items.forEach(([name, it])=>{
+      mctx.font = "15px Arial";
+      const nameLines = this._wrapCanvasText(mctx, name, contentW);
+      nameLines.forEach((nl,i)=>{
+        lines.push({ text:nl, font:"15px Arial", align:"left", gap: i===nameLines.length-1?2:0 });
+      });
+      const unitTxt = it.unit ? ` / ${it.unit}` : '';
+      lines.push({ text:`${it.qty} x ${it.price}k${unitTxt}  =  ${it.qty*it.price}k`, font:"14px Arial", align:"right", gap:10 });
+    });
+
+    lines.push({ text:"-".repeat(32), font:"14px Arial", align:"center", gap:10 });
+    const total = this.tableTotal(table);
+    lines.push({ text:`TỔNG CỘNG:  ${total.toLocaleString('vi-VN')}k`, font:"bold 20px Arial", align:"right", gap:16 });
+    lines.push({ text:"Cảm ơn quý khách!", font:"13px Arial", align:"center", gap:6 });
+    lines.push({ text:"Hẹn gặp lại ☀️", font:"13px Arial", align:"center", gap:20 });
+
+    // Tính chiều cao dựa trên font-size từng dòng
+    let y = 14;
+    lines.forEach(l=>{
+      const sizeMatch = l.font.match(/(\d+)px/);
+      const fontSize = sizeMatch ? parseInt(sizeMatch[1],10) : 14;
+      y += fontSize + 8 + (l.gap||0);
+    });
+    const H = y + 10;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle = "#000";
+    ctx.textBaseline = "top";
+
+    let cy = 14;
+    lines.forEach(l=>{
+      ctx.font = l.font;
+      const sizeMatch = l.font.match(/(\d+)px/);
+      const fontSize = sizeMatch ? parseInt(sizeMatch[1],10) : 14;
+      if(l.align === 'center'){ ctx.textAlign='center'; ctx.fillText(l.text, W/2, cy); }
+      else if(l.align === 'right'){ ctx.textAlign='right'; ctx.fillText(l.text, W-PAD, cy); }
+      else { ctx.textAlign='left'; ctx.fillText(l.text, PAD, cy); }
+      cy += fontSize + 8 + (l.gap||0);
+    });
+
+    return canvas;
+  },
+
+  // Mở app RawBT (Android) để gửi ảnh hoá đơn tới máy in Bluetooth/USB đã ghép nối.
+  // Cần cài app "RawBT inkless print service" trên CH Play và ghép nối máy in trước.
+  printReceipt(tableName, table){
+    const canvas = this.buildReceiptCanvas(tableName, table);
+    const dataUrl = canvas.toDataURL('image/png');
+    const base64 = dataUrl.split(',')[1];
+    const rawbtUrl = `rawbt:data:image/png;base64,${base64}`;
+    window.location.href = rawbtUrl;
+  },
+
   // ---------- NHẬT KÝ ĐƠN HÀNG (để xuất Excel làm chứng từ) ----------
   // Mỗi khi 1 bàn được "Xong / Xoá món" hoặc "Đóng bàn" (còn món chưa thanh toán),
   // ghi lại 1 bản ghi đơn hàng đầy đủ vào localStorage, theo ngày.
@@ -226,5 +327,20 @@ const Store = {
     log.push(record);
     localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(log));
     return record;
+  },
+  deleteOrderRecord(id){
+    const log = this.getOrderLog().filter(r => r.id !== id);
+    localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(log));
+  },
+  clearOrderLog(){
+    localStorage.removeItem(ORDER_LOG_KEY);
+  },
+  // In lại hoá đơn từ 1 bản ghi trong lịch sử (record.table là TÊN bàn, không phải object bàn)
+  printReceiptFromRecord(record){
+    const tableObj = { guests: record.guests, items: {} };
+    record.items.forEach(it=>{
+      tableObj.items[it.name] = { qty: it.qty, price: it.price, unit: it.unit || null };
+    });
+    this.printReceipt(record.table, tableObj);
   }
 };
