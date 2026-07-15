@@ -84,7 +84,10 @@ const Store = {
     if(!s.bankBin || !s.bankAccount) return null;
     const infoEnc = encodeURIComponent(info || "Thanh toan");
     const nameEnc = encodeURIComponent(s.bankAccountName || "");
-    return `https://img.vietqr.io/image/${s.bankBin}-${s.bankAccount}-compact2.png?amount=${Math.round(amount)}&addInfo=${infoEnc}&accountName=${nameEnc}`;
+    // Giá trong hệ thống lưu theo đơn vị "nghìn đồng" (ví dụ 25 = 25.000đ)
+    // nên khi tạo QR phải nhân 1000 để ra đúng số tiền thật (VND).
+    const amountVnd = Math.round(amount * 1000);
+    return `https://img.vietqr.io/image/${s.bankBin}-${s.bankAccount}-compact2.png?amount=${amountVnd}&addInfo=${infoEnc}&accountName=${nameEnc}`;
   },
 
   // ---------- Telegram ----------
