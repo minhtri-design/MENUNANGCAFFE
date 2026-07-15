@@ -3,9 +3,13 @@
    clay accent #C65D3B, sage muted #7C8B6F, line hairline #D9CBAE
    Type: display "Fraunces" (serif, warm/editorial), body "Inter"
 */
-html, body{
+html, body, *{
   touch-action: pan-x pan-y;
   -ms-touch-action: pan-x pan-y;
+}
+html, body{
+  overscroll-behavior: none;
+  min-height: 100dvh;
 }
 
 :root{
