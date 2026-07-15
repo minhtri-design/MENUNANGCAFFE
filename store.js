@@ -10,6 +10,7 @@ const STORAGE_KEY = "nangcafe_tables_v1";
 const CART_KEY = "nangcafe_active_cart_v1";
 const MENU_KEY = "nangcafe_menu_custom_v1";
 const SETTINGS_KEY = "nangcafe_settings_v1";
+const ORDER_LOG_KEY = "nangcafe_order_log_v1";
 const TABLE_LIST = ["Bàn 1","Bàn 2","Bàn 3","Bàn 4","Bàn 5","Bàn 6","Bàn 7","Bàn 8","Mang về"];
 
 // Danh sách ngân hàng phổ biến hỗ trợ VietQR (mã BIN theo chuẩn Napas)
@@ -91,8 +92,8 @@ const Store = {
   },
 
   // ---------- Telegram ----------
-  // newItems: object { "Tên món": {qty, price, unit} } vừa được gọi thêm
-  // table: object { guests, items } hiện tại của bàn đó (sau khi đã cộng dồn)
+  // newItems: object { "Tên món": {qty, price, unit} } vừa được gọi thêm (dùng để đánh dấu 🆕)
+  // table: object { guests, items } hiện tại của bàn đó (đầy đủ, sau khi đã cộng dồn)
   async sendTelegramOrder(tableName, newItems, table){
     const s = this.getSettings();
     if(!s.telegramEnabled || !s.telegramToken || !s.telegramChatId){
@@ -100,11 +101,14 @@ const Store = {
     }
     const total = this.tableTotal(table);
     let text = `🧾 <b>${this.escapeHtml(tableName)}</b>\n`;
-    const newEntries = Object.entries(newItems || {});
-    if(newEntries.length){
-      text += `\n<b>Món vừa gọi:</b>\n`;
-      newEntries.forEach(([name, it])=>{
-        text += `• ${this.escapeHtml(name)} x${it.qty} — ${it.qty*it.price}k\n`;
+
+    const allEntries = Object.entries(table.items || {});
+    if(allEntries.length){
+      text += `\n<b>Danh sách món (đầy đủ):</b>\n`;
+      allEntries.forEach(([name, it])=>{
+        const isNew = newItems && newItems[name];
+        const marker = isNew ? "🆕 " : "";
+        text += `${marker}${this.escapeHtml(name)} x${it.qty} — ${it.qty*it.price}k\n`;
       });
     }
     text += `\n<b>Tổng hoá đơn hiện tại:</b> ${total.toLocaleString('vi-VN')}k`;
@@ -182,5 +186,45 @@ const Store = {
   },
   tableTotal(table){
     return Object.values(table.items).reduce((s,it)=>s+it.qty*it.price,0);
+  },
+
+  // ---------- NHẬT KÝ ĐƠN HÀNG (để xuất Excel làm chứng từ) ----------
+  // Mỗi khi 1 bàn được "Xong / Xoá món" hoặc "Đóng bàn" (còn món chưa thanh toán),
+  // ghi lại 1 bản ghi đơn hàng đầy đủ vào localStorage, theo ngày.
+  _pad2(n){ return String(n).padStart(2,'0'); },
+  todayStr(){
+    const now = new Date();
+    return `${now.getFullYear()}-${this._pad2(now.getMonth()+1)}-${this._pad2(now.getDate())}`;
+  },
+  getOrderLog(){
+    try{
+      const raw = localStorage.getItem(ORDER_LOG_KEY);
+      return raw ? JSON.parse(raw) : [];
+    }catch(e){ return []; }
+  },
+  getOrderLogByDate(dateStr){
+    return this.getOrderLog().filter(r => r.date === dateStr);
+  },
+  logCompletedOrder(tableName, table){
+    const items = Object.entries(table.items || {}).map(([name, it])=>({
+      name, qty: it.qty, price: it.price, unit: it.unit || "",
+      lineTotal: it.qty * it.price
+    }));
+    if(!items.length) return null; // không có món thì không ghi
+
+    const now = new Date();
+    const record = {
+      id: `${Date.now()}_${Math.random().toString(36).slice(2,7)}`,
+      date: this.todayStr(),
+      time: `${this._pad2(now.getHours())}:${this._pad2(now.getMinutes())}:${this._pad2(now.getSeconds())}`,
+      table: tableName,
+      guests: table.guests || 1,
+      items,
+      total: items.reduce((s,it)=>s+it.lineTotal, 0)
+    };
+    const log = this.getOrderLog();
+    log.push(record);
+    localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(log));
+    return record;
   }
 };

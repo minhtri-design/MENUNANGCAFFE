@@ -38,6 +38,13 @@
     </div>
   </div>
 
+  <div class="export-bar">
+    <div class="export-bar-label">📋 Chứng từ doanh thu</div>
+    <input type="date" id="exportDate" class="export-date-input">
+    <button class="btn-secondary" id="exportDayBtn">Xuất Excel ngày này</button>
+    <button class="btn-secondary" id="exportAllBtn">Xuất Excel toàn bộ</button>
+  </div>
+
   <div id="tablesGrid" class="tables-grid"></div>
 
   <div class="empty-tables" id="emptyState" style="display:none">
@@ -49,6 +56,7 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="menu-data.js"></script>
 <script src="store.js"></script>
 <script>
@@ -161,6 +169,7 @@ function clearTableItems(tableName){
   if(!confirm(`Xoá hết món của ${tableName}? (Bàn vẫn giữ, chỉ xoá đơn hàng đã lên)`)) return;
   const tables = Store.getTables();
   if(tables[tableName]){
+    Store.logCompletedOrder(tableName, tables[tableName]);
     tables[tableName].items = {};
     Store.saveTables(tables);
   }
@@ -171,6 +180,9 @@ function clearTableItems(tableName){
 function closeTable(tableName){
   if(!confirm(`Đóng ${tableName}? Toàn bộ đơn hàng và số khách sẽ được xoá.`)) return;
   const tables = Store.getTables();
+  if(tables[tableName]){
+    Store.logCompletedOrder(tableName, tables[tableName]);
+  }
   delete tables[tableName];
   Store.saveTables(tables);
   render();
@@ -209,6 +221,67 @@ function showToast(msg){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
+
+// ---------- Xuất Excel (chứng từ doanh thu) ----------
+function buildDetailRows(records){
+  const rows = [];
+  records.forEach(r=>{
+    r.items.forEach(it=>{
+      rows.push({
+        "Ngày": r.date,
+        "Giờ": r.time,
+        "Bàn": r.table,
+        "Số khách": r.guests,
+        "Tên món": it.name,
+        "Đơn vị": it.unit || "",
+        "Số lượng": it.qty,
+        "Đơn giá (VNĐ)": it.price * 1000,
+        "Thành tiền (VNĐ)": it.lineTotal * 1000
+      });
+    });
+  });
+  return rows;
+}
+
+function buildSummaryRows(records){
+  const byDate = {};
+  records.forEach(r=>{
+    if(!byDate[r.date]) byDate[r.date] = { date:r.date, orders:0, revenue:0 };
+    byDate[r.date].orders += 1;
+    byDate[r.date].revenue += r.total;
+  });
+  return Object.values(byDate).sort((a,b)=>a.date.localeCompare(b.date)).map(d=>({
+    "Ngày": d.date,
+    "Số đơn (bàn) đã chốt": d.orders,
+    "Tổng doanh thu (VNĐ)": d.revenue * 1000
+  }));
+}
+
+function exportToExcel(records, filename){
+  if(!records.length){
+    showToast("Không có dữ liệu để xuất");
+    return;
+  }
+  const wb = XLSX.utils.book_new();
+  const wsDetail = XLSX.utils.json_to_sheet(buildDetailRows(records));
+  const wsSummary = XLSX.utils.json_to_sheet(buildSummaryRows(records));
+  XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng hợp theo ngày");
+  XLSX.utils.book_append_sheet(wb, wsDetail, "Chi tiết đơn hàng");
+  XLSX.writeFile(wb, filename);
+}
+
+document.getElementById('exportDayBtn').addEventListener('click', ()=>{
+  const dateStr = document.getElementById('exportDate').value || Store.todayStr();
+  const records = Store.getOrderLogByDate(dateStr);
+  exportToExcel(records, `Doanh-thu-${dateStr}.xlsx`);
+});
+
+document.getElementById('exportAllBtn').addEventListener('click', ()=>{
+  const records = Store.getOrderLog();
+  exportToExcel(records, `Doanh-thu-tat-ca.xlsx`);
+});
+
+document.getElementById('exportDate').value = Store.todayStr();
 
 render();
 // Refresh khi quay lại tab (nếu mở 2 tab cùng lúc)

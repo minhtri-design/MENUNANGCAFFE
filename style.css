@@ -452,6 +452,20 @@ a{color:inherit;}
 }
 .summary-strip b{ color:var(--ink); font-size:16px; font-family:'Fraunces',serif; }
 
+.export-bar{
+  display:flex; align-items:center; flex-wrap:wrap; gap:10px;
+  background:var(--white); border:1px solid var(--line); border-radius:var(--radius);
+  padding:12px 16px; margin-bottom:20px;
+}
+.export-bar-label{
+  font-weight:700; font-size:14px; color:var(--ink); margin-right:6px;
+}
+.export-date-input{
+  padding:8px 12px; border:1px solid var(--line); border-radius:100px;
+  font-family:'Inter',sans-serif; font-size:13px; color:var(--ink);
+  background:var(--paper);
+}
+
 .tables-grid{
   display:flex;
   flex-direction:column;
