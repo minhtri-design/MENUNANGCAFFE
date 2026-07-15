@@ -11,7 +11,7 @@ const CART_KEY = "nangcafe_active_cart_v1";
 const MENU_KEY = "nangcafe_menu_custom_v1";
 const SETTINGS_KEY = "nangcafe_settings_v1";
 const ORDER_LOG_KEY = "nangcafe_order_log_v1";
-const TABLE_LIST = ["Bàn 1","Bàn 2","Bàn 3","Bàn 4","Bàn 5","Bàn 6","Bàn 7","Bàn 8","Mang về"];
+const TABLE_LIST = ["Mang về","Bàn 1","Bàn 2","Bàn 3","Bàn 4","Bàn 5","Bàn 6","Bàn 7","Bàn 8"];
 
 // Danh sách ngân hàng phổ biến hỗ trợ VietQR (mã BIN theo chuẩn Napas)
 // Nếu ngân hàng của bạn không có trong danh sách, có thể nhập mã BIN thủ công ở trang Cài đặt.

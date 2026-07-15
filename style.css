@@ -560,6 +560,12 @@ a{color:inherit;}
   color:var(--ink);
 }
 .tc-icon-btn.danger{ color:var(--clay); border-color:#EBC9BA; }
+.tc-icon-btn.success{
+  background:var(--sage);
+  color:var(--white);
+  border-color:var(--sage);
+}
+.tc-icon-btn.success:hover{ opacity:0.9; background:var(--sage); }
 .tc-icon-btn:hover{ background:var(--paper); }
 
 .add-item-row{

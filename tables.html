@@ -122,8 +122,7 @@ function renderTableCard(name, table){
     <div class="tc-footer">
       <div class="tc-total">${Store.formatPrice(total)}</div>
       <div class="tc-actions">
-        <button class="tc-icon-btn" data-action="clear-items" data-table="${encodeURIComponent(name)}">Xong / Xoá món</button>
-        <button class="tc-icon-btn danger" data-action="close-table" data-table="${encodeURIComponent(name)}">Đóng bàn</button>
+        <button class="tc-icon-btn success" data-action="pay-table" data-table="${encodeURIComponent(name)}">✓ Đã thanh toán</button>
       </div>
     </div>
   </div>`;
@@ -165,28 +164,21 @@ async function addItemToTable(tableName, itemName, price, unit){
   }
 }
 
-function clearTableItems(tableName){
-  if(!confirm(`Xoá hết món của ${tableName}? (Bàn vẫn giữ, chỉ xoá đơn hàng đã lên)`)) return;
+function payTable(tableName){
   const tables = Store.getTables();
-  if(tables[tableName]){
-    Store.logCompletedOrder(tableName, tables[tableName]);
-    tables[tableName].items = {};
-    Store.saveTables(tables);
+  const t = tables[tableName];
+  if(!t || Object.keys(t.items).length === 0){
+    showToast("Bàn này chưa có món nào");
+    return;
   }
-  render();
-  showToast(`${tableName} đã được thanh toán ✓`);
-}
+  if(!confirm(`Xác nhận ${tableName} đã thanh toán? Hoá đơn sẽ được lưu lại, bàn trống để đón khách mới.`)) return;
 
-function closeTable(tableName){
-  if(!confirm(`Đóng ${tableName}? Toàn bộ đơn hàng và số khách sẽ được xoá.`)) return;
-  const tables = Store.getTables();
-  if(tables[tableName]){
-    Store.logCompletedOrder(tableName, tables[tableName]);
-  }
-  delete tables[tableName];
+  Store.logCompletedOrder(tableName, t);
+  t.items = {};
+  t.guests = 1; // reset để sẵn sàng cho nhóm khách tiếp theo
   Store.saveTables(tables);
   render();
-  showToast(`Đã đóng ${tableName}`);
+  showToast(`${tableName} đã thanh toán ✓ — hoá đơn đã lưu, sẵn sàng đón khách mới`);
 }
 
 document.getElementById('tablesGrid').addEventListener('click', (e)=>{
@@ -199,8 +191,7 @@ document.getElementById('tablesGrid').addEventListener('click', (e)=>{
   else if(action === 'dec') updateItem(tableName, decodeURIComponent(btn.dataset.item), -1);
   else if(action === 'guest-inc') updateGuests(tableName, 1);
   else if(action === 'guest-dec') updateGuests(tableName, -1);
-  else if(action === 'clear-items') clearTableItems(tableName);
-  else if(action === 'close-table') closeTable(tableName);
+  else if(action === 'pay-table') payTable(tableName);
 });
 
 document.getElementById('tablesGrid').addEventListener('change', (e)=>{
