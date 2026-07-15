@@ -289,7 +289,7 @@ renderMenuAdmin();
 loadSettingsToForm();
 </script>
 <script id="no-zoom-lock">
-// Chặn zoom bằng Ctrl + lăn chuột / Ctrl + phím + -
+// Chặn zoom bằng Ctrl + lăn chuột / Ctrl + phím + - (chỉ desktop, không ảnh hưởng cảm ứng)
 document.addEventListener('wheel', function(e){
   if(e.ctrlKey) e.preventDefault();
 }, { passive:false });
@@ -297,19 +297,6 @@ document.addEventListener('wheel', function(e){
 document.addEventListener('keydown', function(e){
   if(e.ctrlKey && ['+','-','=','0'].includes(e.key)) e.preventDefault();
 });
-
-// Chặn double-tap zoom trên điện thoại
-let lastTouchEnd = 0;
-document.addEventListener('touchend', function(e){
-  const now = Date.now();
-  if(now - lastTouchEnd <= 300) e.preventDefault();
-  lastTouchEnd = now;
-}, { passive:false });
-
-// Chặn pinch-zoom (2 ngón tay)
-document.addEventListener('touchmove', function(e){
-  if(e.touches.length > 1) e.preventDefault();
-}, { passive:false });
 </script>
 </body>
 </html>
