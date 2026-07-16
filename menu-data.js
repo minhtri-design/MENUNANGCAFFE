@@ -4,12 +4,14 @@ const MENU_DATA = [
     category: "Coffee - Cacao - Matcha",
     icon: "☕",
     items: [
-      { name: "Đen Phin - Ép", price: 14 },
-      { name: "Sữa Phin - Ép", price: 17 },
-      { name: "Sữa Nóng", price: 15 },
+      { name: "Đen Phin", price: 15 },
+      { name: "Đen Ép", price: 15 },
+      { name: "Sữa Phin", price: 17 },
+      { name: "Sữa Ép", price: 17 },
+      { name: "Sữa Nóng", price: 17 },
       { name: "Bạc Xỉu Nóng", price: 20 },
-      { name: "Bạc Xỉu Đá", price: 20 },
-      { name: "Cafe Kem Muối", price: 25 },
+      { name: "Bạc Xỉu Đá", price: 22 },
+      { name: "Cafe Kem Muối", price: 22 },
       { name: "Cafe kem trứng", price: 25 },
       { name: "Cacao Sữa Nóng", price: 20 },
       { name: "Cacao Sữa Đá", price: 20 },
@@ -59,7 +61,8 @@ const MENU_DATA = [
       { name: "Cà Chua", price: 20 },
       { name: "Thơm Cam", price: 25 },
       { name: "Thơm Cà Rốt", price: 25 },
-      { name: "Nước Chanh - Khoáng chanh", price: 20 },
+      { name: "Nước Chanh", price: 17 },
+      { name: "Khoáng chanh", price: 17 },
       { name: "Dừa", price: 20 }
     ]
   },
@@ -90,9 +93,9 @@ const MENU_DATA = [
       { name: "Trà Dâu Tằm Hạt Đác", price: 27 },
       { name: "Trà Dâu Mãng Cầu", price: 27 },
       { name: "Trà Ô Long Sen Vàng", price: 27 },
-      { name: "Trà Gừng", price: 15 },
-      { name: "Trà Gừng Thảo Mộc", price: 20 },
-      { name: "Trà Lipton Thảo Mộc", price: 20 }
+      { name: "Trà Gừng", price: 17 },
+      { name: "Trà Gừng Thảo Mộc", price: 22 },
+      { name: "Trà Lipton Thảo Mộc", price: 22 }
     ]
   },
   {
@@ -115,12 +118,12 @@ const MENU_DATA = [
     category: "Nước Ngọt",
     icon: "🧃",
     items: [
-      { name: "Vĩnh Hảo", price: 10 },
-      { name: "Pepsi", price: 15 },
-      { name: "Number One", price: 15 },
-      { name: "Stingg", price: 15 },
-      { name: "Nutri", price: 15 },
-      { name: "Trà Xanh", price: 15 },
+      { name: "Vĩnh Hảo", price: 12 },
+      { name: "Pepsi", price: 17 },
+      { name: "Number One", price: 17 },
+      { name: "Stingg", price: 17 },
+      { name: "Nutri", price: 17 },
+      { name: "Trà Xanh", price: 17 },
       { name: "Bò Húc", price: 20 }
     ]
   },
