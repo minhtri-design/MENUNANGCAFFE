@@ -228,7 +228,12 @@ document.getElementById('menuAdmin').addEventListener('input', (e)=>{
     } else if(field === 'unit'){
       cat.items[ii].unit = input.value.trim() || null;
     } else {
-      cat.items[ii].name = input.value;
+      // Firebase không cho phép key chứa các ký tự này, nên tự động loại bỏ để tránh lỗi khi lưu
+      const safeName = input.value.replace(/[.#$/\[\]]/g, '');
+      if(safeName !== input.value){
+        input.value = safeName;
+      }
+      cat.items[ii].name = safeName;
     }
     Store.saveMenu(menu);
   }

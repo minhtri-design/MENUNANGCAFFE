@@ -4,8 +4,8 @@ const MENU_DATA = [
     category: "Coffee - Cacao - Matcha",
     icon: "☕",
     items: [
-      { name: "Đen Phin/Ép", price: 14 },
-      { name: "Sữa Phin/Ép", price: 17 },
+      { name: "Đen Phin - Ép", price: 14 },
+      { name: "Sữa Phin - Ép", price: 17 },
       { name: "Sữa Nóng", price: 15 },
       { name: "Bạc Xỉu Nóng", price: 20 },
       { name: "Bạc Xỉu Đá", price: 20 },
@@ -59,7 +59,7 @@ const MENU_DATA = [
       { name: "Cà Chua", price: 20 },
       { name: "Thơm Cam", price: 25 },
       { name: "Thơm Cà Rốt", price: 25 },
-      { name: "Nước Chanh/ Khoáng chanh", price: 20 },
+      { name: "Nước Chanh - Khoáng chanh", price: 20 },
       { name: "Dừa", price: 20 }
     ]
   },
