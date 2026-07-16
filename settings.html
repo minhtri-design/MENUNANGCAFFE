@@ -133,32 +133,32 @@
     </div>
   </div>
 
-  <!-- ===== ĐỒNG BỘ DỮ LIỆU GIỮA CÁC TRÌNH DUYỆT ===== -->
+  <!-- ===== ĐỒNG BỘ DỮ LIỆU GIỮA CÁC THIẾT BỊ ===== -->
   <div class="settings-section">
-    <h2>🔄 Đồng bộ dữ liệu (Bluefy ⇄ Safari)</h2>
-    <p class="section-desc">Dùng khi bạn order/in bằng Bluefy nhưng muốn xuất Excel bằng Safari (vì Safari mới tải file được).</p>
+    <h2>🔄 Đồng bộ dữ liệu giữa các thiết bị</h2>
+    <p class="section-desc">Dùng khi bạn order/quản lý trên nhiều thiết bị khác nhau (máy tính, iPhone, Android...) và muốn gộp chung lại 1 nơi, hoặc chuyển dữ liệu từ thiết bị này sang thiết bị khác.</p>
 
     <div class="settings-hint">
-      ⚠️ Bluefy và Safari là <b>2 app riêng biệt</b> trên iPhone — dù cùng mở 1 trang web, dữ liệu lưu của mỗi app hoàn toàn tách nhau (đây là giới hạn của iOS). Cần <b>xuất dữ liệu từ Bluefy → nhập vào Safari</b> thủ công như bên dưới, rồi mới xuất Excel được từ Safari.
+      ⚠️ <b>Vì sao cần bước này:</b> mỗi trình duyệt trên mỗi thiết bị (Chrome máy tính, Safari iPhone, Bluefy iPhone, Chrome Android...) lưu dữ liệu <b>hoàn toàn riêng biệt</b>, không tự động thấy nhau — kể cả 2 app khác nhau trên CÙNG 1 chiếc điện thoại (ví dụ Bluefy và Safari) cũng không chia sẻ chung. Đây là giới hạn chung của mọi trình duyệt/thiết bị, không riêng gì máy bạn.
     </div>
 
     <div style="margin-top:16px">
-      <b style="font-size:14px">📤 Bước 1 — Xuất dữ liệu (làm trên Bluefy)</b>
-      <p class="section-desc" style="margin:6px 0 12px">Bấm nút bên dưới để lấy toàn bộ dữ liệu (bàn đang phục vụ, lịch sử hoá đơn, menu, cài đặt) dạng văn bản.</p>
+      <b style="font-size:14px">📤 Bước 1 — Xuất dữ liệu (ở thiết bị/trình duyệt NGUỒN)</b>
+      <p class="section-desc" style="margin:6px 0 12px">Mở trang này trên thiết bị đang có dữ liệu bạn muốn chuyển đi (VD: điện thoại nhân viên vừa order cả ngày) → bấm nút bên dưới.</p>
       <div class="settings-actions">
         <button class="btn-secondary" id="exportDataBtn">📤 Xuất dữ liệu</button>
         <button class="btn-secondary" id="copyDataBtn">📋 Sao chép văn bản</button>
       </div>
       <textarea id="exportDataArea" readonly style="width:100%; height:110px; margin-top:10px; font-family:monospace; font-size:11px; padding:10px; border-radius:9px; border:1.5px solid var(--line); background:var(--paper); display:none;"></textarea>
       <div class="settings-hint" style="margin-top:10px">
-        Nếu nút tải file không hoạt động trong Bluefy: bấm <b>"📋 Sao chép văn bản"</b> → gửi đoạn văn bản đó cho chính mình qua Telegram/Zalo/Ghi chú (Notes) → mở lại trên Safari để dán vào Bước 2.
+        <b>"📤 Xuất dữ liệu"</b> sẽ tự tải xuống 1 file <code>.json</code> — cách này chạy tốt trên máy tính, Android, và Safari iPhone. Riêng app Bluefy có thể không tự tải file được, lúc đó dùng <b>"📋 Sao chép văn bản"</b> rồi gửi đoạn đó cho chính mình qua Telegram/Zalo/Email/AirDrop để chuyển sang thiết bị khác.
       </div>
     </div>
 
     <div style="margin-top:22px">
-      <b style="font-size:14px">📥 Bước 2 — Nhập dữ liệu (làm trên Safari)</b>
-      <p class="section-desc" style="margin:6px 0 12px">Mở trang này bằng Safari, vào đúng trang Cài đặt này, dán dữ liệu đã xuất từ Bước 1 vào ô bên dưới.</p>
-      <textarea id="importDataArea" placeholder="Dán dữ liệu đã xuất từ Bluefy vào đây..." style="width:100%; height:110px; font-family:monospace; font-size:11px; padding:10px; border-radius:9px; border:1.5px solid var(--line); background:var(--paper);"></textarea>
+      <b style="font-size:14px">📥 Bước 2 — Nhập dữ liệu (ở thiết bị/trình duyệt ĐÍCH)</b>
+      <p class="section-desc" style="margin:6px 0 12px">Mở trang này trên thiết bị muốn nhận dữ liệu, vào đúng trang Cài đặt này, dán nội dung đã xuất từ Bước 1 vào ô bên dưới (hoặc mở file .json bằng ứng dụng ghi chú/trình soạn thảo rồi copy nội dung).</p>
+      <textarea id="importDataArea" placeholder="Dán dữ liệu đã xuất từ thiết bị khác vào đây..." style="width:100%; height:110px; font-family:monospace; font-size:11px; padding:10px; border-radius:9px; border:1.5px solid var(--line); background:var(--paper);"></textarea>
 
       <label class="checkbox-row" style="margin-top:12px">
         <input type="checkbox" id="importMergeMode" checked>
@@ -168,6 +168,10 @@
       <div class="settings-actions">
         <button class="btn-primary" id="importDataBtn">📥 Nhập dữ liệu</button>
       </div>
+    </div>
+
+    <div class="settings-hint" style="margin-top:16px">
+      💡 <b>Lưu ý quan trọng:</b> đây là đồng bộ <b>thủ công</b> (làm khi cần, ví dụ cuối ca/cuối ngày), không phải tự động theo thời gian thực. Nếu nhiều nhân viên cùng order trên nhiều điện thoại CÙNG LÚC và muốn tất cả cùng thấy chung 1 danh sách bàn ngay lập tức, sẽ cần nâng cấp lên hệ thống có máy chủ trung tâm (phức tạp và tốn kém hơn) — nếu bạn quan tâm hướng này, cứ nhắn để mình tư vấn thêm.
     </div>
   </div>
 

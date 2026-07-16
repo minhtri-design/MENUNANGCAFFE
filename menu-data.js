@@ -129,9 +129,8 @@ const MENU_DATA = [
     icon: "🍟",
     items: [
       { name: "Hạt Dưa", price: 12 },
-      { name: "Hạt Hướng Dương", price: 12 }
-      // ⚠️ Còn 1 món nữa trong ảnh bạn gửi bị mờ/cắt (đọc được là "Thuốc ngựa"),
-      // chưa rõ tên chính xác và giá — nhắn lại tên + giá đúng để mình thêm vào.
+      { name: "Hạt Hướng Dương", price: 12 },
+      { name: "Thuốc ngựa", price: 30 }
     ]
   }
 ];
