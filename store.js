@@ -46,26 +46,107 @@ const VIETQR_BANKS = [
   { bin:"970439", name:"Public Bank Vietnam" }
 ];
 
+// ---------- ĐỒNG BỘ TRỰC TUYẾN (Firebase Realtime Database) ----------
+// Toàn bộ dữ liệu dùng chung (bàn, cài đặt, menu, lịch sử hoá đơn) được đồng bộ
+// TỨC THỜI giữa mọi thiết bị qua Firebase — không cần xuất/nhập file thủ công nữa.
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCjIxne2AM-3cglJmSgq3DHA4T6CyUKLiU",
+  authDomain: "nang-cafe.firebaseapp.com",
+  databaseURL: "https://nang-cafe-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "nang-cafe",
+  storageBucket: "nang-cafe.firebasestorage.app",
+  messagingSenderId: "584860026252",
+  appId: "1:584860026252:web:f36dd7c41eb58435eb82a9"
+};
+const MIGRATED_FLAG_KEY = "nangcafe_migrated_to_firebase_v1";
+
+let _fbDb = null;
+let _tablesCache = {};
+let _settingsCache = null;
+let _menuCache = null;
+let _orderLogCache = {};
+let _onSyncChange = null;
+
+// Nếu Firebase còn trống (lần đầu bật đồng bộ) mà máy này đang có dữ liệu cũ trong localStorage,
+// tự động đẩy dữ liệu cũ đó lên Firebase 1 lần duy nhất để không bị mất.
+function _migrateLocalDataIfNeeded(){
+  if(localStorage.getItem(MIGRATED_FLAG_KEY)) return;
+  localStorage.setItem(MIGRATED_FLAG_KEY, "1");
+  try{
+    const localTables = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    const localLogArr = JSON.parse(localStorage.getItem(ORDER_LOG_KEY) || 'null');
+    const localMenu = JSON.parse(localStorage.getItem(MENU_KEY) || 'null');
+    const localSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
+
+    _fbDb.ref('tables').once('value').then(snap=>{
+      if(!snap.exists() && localTables && Object.keys(localTables).length) _fbDb.ref('tables').set(localTables);
+    });
+    _fbDb.ref('orderLog').once('value').then(snap=>{
+      if(!snap.exists() && localLogArr && localLogArr.length){
+        const map = {};
+        localLogArr.forEach(r => map[r.id] = r);
+        _fbDb.ref('orderLog').set(map);
+      }
+    });
+    _fbDb.ref('menu').once('value').then(snap=>{
+      if(!snap.exists() && localMenu) _fbDb.ref('menu').set(localMenu);
+    });
+    _fbDb.ref('settings').once('value').then(snap=>{
+      if(!snap.exists() && localSettings) _fbDb.ref('settings').set(localSettings);
+    });
+  }catch(e){ console.error("Lỗi chuyển dữ liệu cũ lên Firebase:", e); }
+}
+
 const Store = {
   escapeHtml(str){
     return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   },
 
+  // Gọi 1 LẦN DUY NHẤT ở mỗi trang, ngay khi tải trang xong, TRƯỚC lần render đầu tiên.
+  // callback sẽ được gọi lại mỗi khi có bất kỳ thay đổi nào — kể cả từ thiết bị/nhân viên khác —
+  // để trang tự render lại, tạo cảm giác "đồng bộ trực tuyến" thật sự.
+  initSync(callback){
+    _onSyncChange = callback;
+    if(typeof firebase === 'undefined'){
+      console.error("Không tìm thấy Firebase SDK — kiểm tra lại thẻ <script> trong file HTML.");
+      if(_onSyncChange) _onSyncChange();
+      return;
+    }
+    if(!_fbDb){
+      firebase.initializeApp(FIREBASE_CONFIG);
+      _fbDb = firebase.database();
+      _migrateLocalDataIfNeeded();
+    }
+    _fbDb.ref('tables').on('value', snap=>{
+      _tablesCache = snap.val() || {};
+      if(_onSyncChange) _onSyncChange();
+    });
+    _fbDb.ref('settings').on('value', snap=>{
+      _settingsCache = snap.val() || null;
+      if(_onSyncChange) _onSyncChange();
+    });
+    _fbDb.ref('menu').on('value', snap=>{
+      _menuCache = snap.val() || null;
+      if(_onSyncChange) _onSyncChange();
+    });
+    _fbDb.ref('orderLog').on('value', snap=>{
+      _orderLogCache = snap.val() || {};
+      if(_onSyncChange) _onSyncChange();
+    });
+  },
+
   // ---------- MENU (có thể chỉnh sửa ở trang Cài đặt) ----------
   getMenu(){
-    try{
-      const raw = localStorage.getItem(MENU_KEY);
-      if(raw) return JSON.parse(raw);
-    }catch(e){}
-    const cloned = JSON.parse(JSON.stringify(MENU_DATA));
-    localStorage.setItem(MENU_KEY, JSON.stringify(cloned));
-    return cloned;
+    if(_menuCache) return JSON.parse(JSON.stringify(_menuCache));
+    return JSON.parse(JSON.stringify(MENU_DATA));
   },
   saveMenu(menu){
-    localStorage.setItem(MENU_KEY, JSON.stringify(menu));
+    _menuCache = menu;
+    if(_fbDb) _fbDb.ref('menu').set(menu);
   },
   resetMenu(){
-    localStorage.removeItem(MENU_KEY);
+    _menuCache = null;
+    if(_fbDb) _fbDb.ref('menu').remove();
   },
 
   // ---------- CÀI ĐẶT (Telegram + Ngân hàng) ----------
@@ -74,13 +155,11 @@ const Store = {
       telegramEnabled:false, telegramToken:"", telegramChatId:"",
       bankBin:"", bankAccount:"", bankAccountName:""
     };
-    try{
-      const raw = localStorage.getItem(SETTINGS_KEY);
-      return raw ? {...defaults, ...JSON.parse(raw)} : defaults;
-    }catch(e){ return defaults; }
+    return _settingsCache ? {...defaults, ..._settingsCache} : defaults;
   },
   saveSettings(s){
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+    _settingsCache = s;
+    if(_fbDb) _fbDb.ref('settings').set(s);
   },
 
   // ---------- VietQR ----------
@@ -142,13 +221,11 @@ const Store = {
     }
   },
   getTables(){
-    try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    }catch(e){ return {}; }
+    return JSON.parse(JSON.stringify(_tablesCache || {}));
   },
   saveTables(tables){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tables));
+    _tablesCache = tables;
+    if(_fbDb) _fbDb.ref('tables').set(tables);
   },
   getCart(){
     try{
@@ -371,10 +448,7 @@ const Store = {
     return `${now.getFullYear()}-${this._pad2(now.getMonth()+1)}-${this._pad2(now.getDate())}`;
   },
   getOrderLog(){
-    try{
-      const raw = localStorage.getItem(ORDER_LOG_KEY);
-      return raw ? JSON.parse(raw) : [];
-    }catch(e){ return []; }
+    return Object.values(_orderLogCache || {});
   },
   getOrderLogByDate(dateStr){
     return this.getOrderLog().filter(r => r.date === dateStr);
@@ -396,17 +470,19 @@ const Store = {
       items,
       total: items.reduce((s,it)=>s+it.lineTotal, 0)
     };
-    const log = this.getOrderLog();
-    log.push(record);
-    localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(log));
+    _orderLogCache = { ..._orderLogCache, [record.id]: record };
+    if(_fbDb) _fbDb.ref('orderLog/' + record.id).set(record);
     return record;
   },
   deleteOrderRecord(id){
-    const log = this.getOrderLog().filter(r => r.id !== id);
-    localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(log));
+    const log = { ..._orderLogCache };
+    delete log[id];
+    _orderLogCache = log;
+    if(_fbDb) _fbDb.ref('orderLog/' + id).remove();
   },
   clearOrderLog(){
-    localStorage.removeItem(ORDER_LOG_KEY);
+    _orderLogCache = {};
+    if(_fbDb) _fbDb.ref('orderLog').remove();
   },
   // In lại hoá đơn từ 1 bản ghi trong lịch sử (record.table là TÊN bàn, không phải object bàn)
   printReceiptFromRecord(record){
@@ -424,9 +500,9 @@ const Store = {
     return this.printReceiptBLE(record.table, tableObj);
   },
 
-  // ---------- ĐỒNG BỘ DỮ LIỆU GIỮA CÁC TRÌNH DUYỆT (Bluefy ⇄ Safari) ----------
-  // Bluefy và Safari là 2 app khác nhau trên iPhone nên KHÔNG chia sẻ chung bộ nhớ trình duyệt.
-  // Giải pháp: xuất toàn bộ dữ liệu ra 1 chuỗi JSON ở trình duyệt này, rồi nhập lại ở trình duyệt kia.
+  // ---------- SAO LƯU / PHỤC HỒI DỮ LIỆU (phòng hờ, không còn dùng để đồng bộ nữa) ----------
+  // Từ khi có Firebase, dữ liệu đã tự đồng bộ trực tuyến giữa mọi thiết bị.
+  // 2 hàm dưới đây chỉ còn để tải file sao lưu về máy (đề phòng sự cố) hoặc phục hồi khi cần.
   exportAllDataJson(){
     const payload = {
       exportedAt: new Date().toISOString(),
@@ -448,7 +524,6 @@ const Store = {
     }
     try{
       if(merge){
-        // Bàn: cộng dồn theo tên bàn (nếu trùng tên thì merge món)
         const currentTables = this.getTables();
         const incomingTables = payload.tables || {};
         for(const name in incomingTables){
@@ -467,15 +542,19 @@ const Store = {
         }
         this.saveTables(currentTables);
 
-        // Lịch sử hoá đơn: gộp theo id, bỏ trùng
-        const currentLog = this.getOrderLog();
-        const existingIds = new Set(currentLog.map(r => r.id));
+        const currentLogMap = { ..._orderLogCache };
         const incomingLog = payload.orderLog || [];
-        const merged = currentLog.concat(incomingLog.filter(r => !existingIds.has(r.id)));
-        localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(merged));
+        incomingLog.forEach(r => { if(!currentLogMap[r.id]) currentLogMap[r.id] = r; });
+        _orderLogCache = currentLogMap;
+        if(_fbDb) _fbDb.ref('orderLog').set(currentLogMap);
       } else {
         if(payload.tables) this.saveTables(payload.tables);
-        if(payload.orderLog) localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(payload.orderLog));
+        if(payload.orderLog){
+          const map = {};
+          payload.orderLog.forEach(r => map[r.id] = r);
+          _orderLogCache = map;
+          if(_fbDb) _fbDb.ref('orderLog').set(map);
+        }
       }
       if(payload.menu) this.saveMenu(payload.menu);
       if(payload.settings) this.saveSettings(payload.settings);

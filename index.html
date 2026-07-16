@@ -78,6 +78,8 @@
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="menu-data.js"></script>
 <script src="store.js"></script>
 <script>
@@ -293,9 +295,11 @@ function showToast(msg){
 }
 
 // init
-renderChips();
-renderMenu();
-updateCounters();
+Store.initSync(()=>{
+  renderChips();
+  renderMenu(searchInput.value);
+  updateCounters();
+});
 </script>
 <script id="no-zoom-lock">
 // Chặn zoom bằng Ctrl + lăn chuột / Ctrl + phím + - (chỉ desktop, không ảnh hưởng cảm ứng)

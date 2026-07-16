@@ -66,6 +66,8 @@
 <div class="toast" id="toast"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <script src="menu-data.js"></script>
 <script src="store.js"></script>
 <script>
@@ -390,8 +392,10 @@ document.getElementById('exportAllBtn').addEventListener('click', ()=>{
 
 document.getElementById('exportDate').value = Store.todayStr();
 
-render();
-renderHistory();
+Store.initSync(()=>{
+  render();
+  renderHistory();
+});
 // Refresh khi quay lại tab (nếu mở 2 tab cùng lúc)
 window.addEventListener('storage', ()=>{ render(); renderHistory(); });
 </script>
