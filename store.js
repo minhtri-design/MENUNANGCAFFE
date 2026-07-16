@@ -233,7 +233,14 @@ const Store = {
     }
   },
   getTables(){
-    return JSON.parse(JSON.stringify(_tablesCache || {}));
+    const tables = JSON.parse(JSON.stringify(_tablesCache || {}));
+    // Firebase KHÔNG lưu được object rỗng ({}) — khi 1 bàn chưa có món, Firebase tự xoá field "items"
+    // khi lưu, nên đọc lại sẽ bị undefined. Chuẩn hoá lại ở đây để mọi nơi dùng Store.getTables()
+    // đều an toàn, không cần tự kiểm tra rải rác khắp nơi.
+    for(const name in tables){
+      if(!tables[name].items) tables[name].items = {};
+    }
+    return tables;
   },
   saveTables(tables){
     _tablesCache = tables;
@@ -539,6 +546,7 @@ const Store = {
         const currentTables = this.getTables();
         const incomingTables = payload.tables || {};
         for(const name in incomingTables){
+          if(!incomingTables[name].items) incomingTables[name].items = {};
           if(!currentTables[name]){
             currentTables[name] = incomingTables[name];
           } else {
