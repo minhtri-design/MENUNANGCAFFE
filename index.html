@@ -54,14 +54,22 @@
   <button class="fb-btn" id="fbSendBtn">Gửi bàn →</button>
 </div>
 
-<!-- Modal chọn bàn -->
+<!-- Modal chọn nơi gửi đơn -->
 <div class="modal-overlay" id="tableModal">
   <div class="modal-box" style="position:relative">
     <button class="modal-close" id="modalCloseBtn">✕</button>
-    <div class="modal-title">Gửi đơn tới bàn nào?</div>
-    <div class="modal-sub">Chọn bàn để gán các món vừa chọn</div>
-    <div class="table-grid" id="tableGrid"></div>
-    <div class="modal-actions">
+    <div class="modal-title">Gửi đơn tới đâu?</div>
+    <div class="modal-sub">Chọn "Mang về", hoặc nhập tên khách để lưu riêng đơn cho khách đó</div>
+
+    <button type="button" class="dest-option" id="destTakeaway">🥡 Mang về</button>
+
+    <div class="field-group" style="margin-top:16px">
+      <label>Hoặc nhập tên khách hàng (khách tại quán)</label>
+      <input type="text" id="customerNameInput" list="activeCustomers" placeholder="VD: Chị Hoa, Anh Tuấn bàn ngoài...">
+      <datalist id="activeCustomers"></datalist>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px">
       <button class="modal-btn secondary" id="modalCancelBtn">Huỷ</button>
       <button class="modal-btn primary" id="modalConfirmBtn" disabled>Xác nhận</button>
     </div>
@@ -206,14 +214,12 @@ searchClear.addEventListener('click', ()=>{
   searchInput.focus();
 });
 
-// Table modal
-function renderTableGrid(){
+// Modal gửi đơn: "Mang về" hoặc tự điền tên khách
+function renderActiveCustomersDatalist(){
   const tables = Store.getTables();
-  const grid = document.getElementById('tableGrid');
-  grid.innerHTML = TABLE_LIST.map(name => {
-    const occupied = tables[name] && Object.keys(tables[name].items).length > 0;
-    return `<div class="table-opt ${occupied?'occupied':''}" data-table="${name}">${name}</div>`;
-  }).join('');
+  const names = Object.keys(tables).filter(n => n !== 'Mang về' && Object.keys(tables[n].items).length > 0);
+  const dl = document.getElementById('activeCustomers');
+  dl.innerHTML = names.map(n => `<option value="${Store.escapeHtml(n)}"></option>`).join('');
 }
 
 function openModal(){
@@ -222,7 +228,9 @@ function openModal(){
     return;
   }
   selectedTable = null;
-  renderTableGrid();
+  document.getElementById('destTakeaway').classList.remove('selected');
+  document.getElementById('customerNameInput').value = '';
+  renderActiveCustomersDatalist();
   document.getElementById('modalConfirmBtn').disabled = true;
   document.getElementById('tableModal').classList.add('show');
 }
@@ -238,13 +246,23 @@ document.getElementById('tableModal').addEventListener('click', (e)=>{
   if(e.target.id === 'tableModal') closeModal();
 });
 
-document.getElementById('tableGrid').addEventListener('click', (e)=>{
-  const opt = e.target.closest('.table-opt');
-  if(!opt) return;
-  document.querySelectorAll('.table-opt').forEach(o=>o.classList.remove('selected'));
-  opt.classList.add('selected');
-  selectedTable = opt.dataset.table;
+document.getElementById('destTakeaway').addEventListener('click', ()=>{
+  selectedTable = 'Mang về';
+  document.getElementById('destTakeaway').classList.add('selected');
+  document.getElementById('customerNameInput').value = '';
   document.getElementById('modalConfirmBtn').disabled = false;
+});
+
+document.getElementById('customerNameInput').addEventListener('input', (e)=>{
+  const v = e.target.value.trim();
+  document.getElementById('destTakeaway').classList.remove('selected');
+  if(v){
+    selectedTable = v;
+    document.getElementById('modalConfirmBtn').disabled = false;
+  } else {
+    selectedTable = null;
+    document.getElementById('modalConfirmBtn').disabled = true;
+  }
 });
 
 document.getElementById('modalConfirmBtn').addEventListener('click', async ()=>{

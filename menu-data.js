@@ -5,16 +5,21 @@ const MENU_DATA = [
     icon: "☕",
     items: [
       { name: "Đen Phin/Ép", price: 14 },
-      { name: "Sữa Phin/Ép", price: 16 },
+      { name: "Sữa Phin/Ép", price: 17 },
       { name: "Sữa Nóng", price: 15 },
-      { name: "Bạc Xỉu Nóng/Đá", price: 20 },
-      { name: "Cafe Kem Muối/Kem Trứng", price: 20 },
-      { name: "Cacao Sữa Nóng/Đá", price: 20 },
-      { name: "Cacao Kem Muối/ Kem Trứng", price: 25 },
-      { name: "Phindi Choco", price: 25 },
-      { name: "Matcha Kem Muối/ Kem Trứng", price: 25 },
+      { name: "Bạc Xỉu Nóng", price: 20 },
+      { name: "Bạc Xỉu Đá", price: 20 },
+      { name: "Cafe Kem Muối", price: 25 },
+      { name: "Cafe kem trứng", price: 25 },
+      { name: "Cacao Sữa Nóng", price: 20 },
+      { name: "Cacao Sữa Đá", price: 20 },
+      { name: "Cacao Kem Muối", price: 25 },
+      { name: "Cacao Kem Trứng", price: 25 },
       { name: "Matcha Latte", price: 25 },
-      { name: "Matcha Latte Dâu/ Xoài", price: 27 }
+      { name: "Matcha Latte Dâu", price: 27 },
+      { name: "Matcha Latte Xoài", price: 27 },
+      { name: "Matcha Kem Muối", price: 25 },
+      { name: "Matcha Kem Trứng", price: 25 }
     ]
   },
   {
@@ -22,17 +27,17 @@ const MENU_DATA = [
     icon: "🥛",
     items: [
       { name: "Sữa Tươi cà phê", price: 25 },
+      { name: "Sữa Tươi Cacao", price: 25 },
       { name: "Sữa Tươi trân châu đường đen", price: 25 },
-      { name: "Sữa Tươi tcđđ Kem Trứng dừa nướng", price: 30 },
-      { name: "Sữa tươi tcđđ kem dẻo phô mai", price: 30 }
+      { name: "Sữa Tươi tcđđ Kem Trứng dừa nướng", price: 30 }
     ]
   },
   {
     category: "Sữa Chua",
     icon: "🍦",
     items: [
-      { name: "Sữa Chua Đá", price: 17 },
-      { name: "Sữa Chua Thạch", price: 20 },
+      { name: "Sữa Chua Đá", price: 18 },
+      { name: "Sữa Chua Thạch", price: 22 },
       { name: "Sữa chua Dâu Tây", price: 25 },
       { name: "Sữa Chua Việt Quất", price: 25 },
       { name: "Sữa Chua Dâu Tằm", price: 25 },
@@ -52,10 +57,9 @@ const MENU_DATA = [
       { name: "Cà Rốt", price: 20 },
       { name: "Ổi", price: 20 },
       { name: "Cà Chua", price: 20 },
-      { name: "Ép Táo", price: 25 },
       { name: "Thơm Cam", price: 25 },
       { name: "Thơm Cà Rốt", price: 25 },
-      { name: "Nước Chanh", price: 15 },
+      { name: "Nước Chanh/ Khoáng chanh", price: 20 },
       { name: "Dừa", price: 20 }
     ]
   },
@@ -63,9 +67,9 @@ const MENU_DATA = [
     category: "Soda",
     icon: "🥤",
     items: [
-      { name: "Soda Chanh", price: 22 },
-      { name: "Soda Dâu", price: 22 },
-      { name: "Soda Việt Quất", price: 22 },
+      { name: "Soda Chanh", price: 25 },
+      { name: "Soda Dâu", price: 25 },
+      { name: "Soda Việt Quất", price: 25 },
       { name: "Soda Biển Xanh", price: 25 },
       { name: "Soda Bạc Hà", price: 25 }
     ]
@@ -76,7 +80,7 @@ const MENU_DATA = [
     items: [
       { name: "Trà chanh", price: 20 },
       { name: "Trà Đào", price: 25 },
-      { name: "Trà Dâu Tây", price: 25 },
+      { name: "Trà Dâu Tây(theo mùa)", price: 25 },
       { name: "Trà Dâu Tằm", price: 25 },
       { name: "Trà Vải", price: 25 },
       { name: "Trà Chanh Dây", price: 25 },
@@ -95,16 +99,16 @@ const MENU_DATA = [
     category: "Trà Sữa",
     icon: "🧋",
     items: [
-      { name: "Trà Sữa Truyền Thống", price: 22 },
-      { name: "Trà Sữa Thái Xanh", price: 22 },
-      { name: "Trà Sữa Matcha", price: 25 },
-      { name: "Trà Sữa Matcha Kem Trứng/ Kem Dẻo Phô Mai", price: 30 },
+      { name: "Trà Sữa Truyền Thống", price: 25 },
+      { name: "Trà Sữa Thái Xanh", price: 25 },
+      { name: "Trà Sữa Matcha", price: 27 },
+      { name: "Trà Sữa Matcha Kem Trứng Dừa Nướng", price: 30 },
       { name: "Trà Sữa Khoai Môn", price: 25 },
-      { name: "Trà Sữa Khoai Môn Kem Trứng/ Kem Dẻo Phô Mai", price: 30 },
+      { name: "Trà Sữa Khoai Môn Kem Trứng Dừa Nướng", price: 30 },
       { name: "Trà Sữa Socola", price: 25 },
-      { name: "Trà Sữa Socola Kem Trứng/ kem Dẻo Phô Mai", price: 30 },
+      { name: "Trà Sữa Socola Kem Trứng Dừa Nướng", price: 30 },
       { name: "Trà Sữa Ô Long", price: 27 },
-      { name: "Trà Sữa TCĐĐ Kem Trứng Dừa Nướng/ Kem Dẻo Phô Mai", price: 30 }
+      { name: "Trà Sữa TCĐĐ Kem Trứng Dừa Nướng", price: 30 }
     ]
   },
   {
@@ -125,13 +129,9 @@ const MENU_DATA = [
     icon: "🍟",
     items: [
       { name: "Hạt Dưa", price: 12 },
-      { name: "Hạt Hướng Dương", price: 12 },
-      { name: "Cá Viên Chiên", price: 40, unit: "phần" },
-      { name: "Bò Viên Chiên", price: 40, unit: "phần" },
-      { name: "Tôm Viên Chiên", price: 40, unit: "phần" },
-      { name: "Khoai Tây Chiên", price: 30, unit: "phần" },
-      { name: "Xúc Xích", price: 30, unit: "3 cây" },
-      { name: "Phô Mai Que", price: 30, unit: "3 cây" }
+      { name: "Hạt Hướng Dương", price: 12 }
+      // ⚠️ Còn 1 món nữa trong ảnh bạn gửi bị mờ/cắt (đọc được là "Thuốc ngựa"),
+      // chưa rõ tên chính xác và giá — nhắn lại tên + giá đúng để mình thêm vào.
     ]
   }
 ];

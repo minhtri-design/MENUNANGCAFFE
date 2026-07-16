@@ -402,6 +402,26 @@ a{color:inherit;}
   color:var(--clay);
 }
 .table-opt.selected.occupied::after{ color:var(--sun); }
+
+.dest-option{
+  width:100%;
+  padding:16px;
+  text-align:center;
+  border-radius:12px;
+  border:2px solid var(--line);
+  background:var(--paper);
+  font-weight:700;
+  font-size:16px;
+  cursor:pointer;
+  color:var(--ink);
+  transition:all .15s ease;
+}
+.dest-option:hover{ border-color:var(--sun-deep); }
+.dest-option.selected{
+  background:var(--clay);
+  color:var(--white);
+  border-color:var(--clay);
+}
 .modal-actions{ display:flex; gap:10px; }
 .modal-btn{
   flex:1;

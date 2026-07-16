@@ -133,6 +133,44 @@
     </div>
   </div>
 
+  <!-- ===== ĐỒNG BỘ DỮ LIỆU GIỮA CÁC TRÌNH DUYỆT ===== -->
+  <div class="settings-section">
+    <h2>🔄 Đồng bộ dữ liệu (Bluefy ⇄ Safari)</h2>
+    <p class="section-desc">Dùng khi bạn order/in bằng Bluefy nhưng muốn xuất Excel bằng Safari (vì Safari mới tải file được).</p>
+
+    <div class="settings-hint">
+      ⚠️ Bluefy và Safari là <b>2 app riêng biệt</b> trên iPhone — dù cùng mở 1 trang web, dữ liệu lưu của mỗi app hoàn toàn tách nhau (đây là giới hạn của iOS). Cần <b>xuất dữ liệu từ Bluefy → nhập vào Safari</b> thủ công như bên dưới, rồi mới xuất Excel được từ Safari.
+    </div>
+
+    <div style="margin-top:16px">
+      <b style="font-size:14px">📤 Bước 1 — Xuất dữ liệu (làm trên Bluefy)</b>
+      <p class="section-desc" style="margin:6px 0 12px">Bấm nút bên dưới để lấy toàn bộ dữ liệu (bàn đang phục vụ, lịch sử hoá đơn, menu, cài đặt) dạng văn bản.</p>
+      <div class="settings-actions">
+        <button class="btn-secondary" id="exportDataBtn">📤 Xuất dữ liệu</button>
+        <button class="btn-secondary" id="copyDataBtn">📋 Sao chép văn bản</button>
+      </div>
+      <textarea id="exportDataArea" readonly style="width:100%; height:110px; margin-top:10px; font-family:monospace; font-size:11px; padding:10px; border-radius:9px; border:1.5px solid var(--line); background:var(--paper); display:none;"></textarea>
+      <div class="settings-hint" style="margin-top:10px">
+        Nếu nút tải file không hoạt động trong Bluefy: bấm <b>"📋 Sao chép văn bản"</b> → gửi đoạn văn bản đó cho chính mình qua Telegram/Zalo/Ghi chú (Notes) → mở lại trên Safari để dán vào Bước 2.
+      </div>
+    </div>
+
+    <div style="margin-top:22px">
+      <b style="font-size:14px">📥 Bước 2 — Nhập dữ liệu (làm trên Safari)</b>
+      <p class="section-desc" style="margin:6px 0 12px">Mở trang này bằng Safari, vào đúng trang Cài đặt này, dán dữ liệu đã xuất từ Bước 1 vào ô bên dưới.</p>
+      <textarea id="importDataArea" placeholder="Dán dữ liệu đã xuất từ Bluefy vào đây..." style="width:100%; height:110px; font-family:monospace; font-size:11px; padding:10px; border-radius:9px; border:1.5px solid var(--line); background:var(--paper);"></textarea>
+
+      <label class="checkbox-row" style="margin-top:12px">
+        <input type="checkbox" id="importMergeMode" checked>
+        Gộp với dữ liệu hiện có (khuyên dùng) — bỏ chọn nếu muốn <b>thay thế hoàn toàn</b>
+      </label>
+
+      <div class="settings-actions">
+        <button class="btn-primary" id="importDataBtn">📥 Nhập dữ liệu</button>
+      </div>
+    </div>
+  </div>
+
   <div class="settings-actions">
     <button class="btn-primary" id="saveSettingsBtn">Lưu cài đặt</button>
   </div>
@@ -313,6 +351,68 @@ function showToast(msg){
   t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2400);
 }
+
+// ---------- XUẤT / NHẬP DỮ LIỆU (đồng bộ Bluefy ⇄ Safari) ----------
+document.getElementById('exportDataBtn').addEventListener('click', ()=>{
+  const json = Store.exportAllDataJson();
+  const area = document.getElementById('exportDataArea');
+  area.value = json;
+  area.style.display = 'block';
+
+  try{
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0,16).replace(/[:T]/g,'-');
+    a.href = url;
+    a.download = `nangcafe-sync-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 3000);
+    showToast("Đã xuất dữ liệu — nếu không thấy hộp thoại tải file, dùng nút Sao chép văn bản bên dưới");
+  }catch(e){
+    showToast("Không tự tải file được — dùng nút Sao chép văn bản bên dưới");
+  }
+});
+
+document.getElementById('copyDataBtn').addEventListener('click', async ()=>{
+  const json = Store.exportAllDataJson();
+  const area = document.getElementById('exportDataArea');
+  area.value = json;
+  area.style.display = 'block';
+  try{
+    await navigator.clipboard.writeText(json);
+    showToast("Đã sao chép ✓ — dán vào Ghi chú/Telegram để chuyển sang Safari");
+  }catch(e){
+    area.select();
+    document.execCommand('copy');
+    showToast("Đã chọn sẵn văn bản — bấm Copy trên bàn phím");
+  }
+});
+
+document.getElementById('importDataBtn').addEventListener('click', ()=>{
+  const raw = document.getElementById('importDataArea').value.trim();
+  if(!raw){
+    showToast("Dán dữ liệu vào ô trước đã");
+    return;
+  }
+  const merge = document.getElementById('importMergeMode').checked;
+  const warnMsg = merge
+    ? "Nhập dữ liệu và GỘP với dữ liệu hiện có trên trình duyệt này?"
+    : "Nhập dữ liệu và THAY THẾ TOÀN BỘ dữ liệu hiện có trên trình duyệt này? Dữ liệu cũ sẽ mất.";
+  if(!confirm(warnMsg)) return;
+
+  const result = Store.importAllDataJson(raw, merge);
+  if(result.ok){
+    showToast("Nhập dữ liệu thành công ✓");
+    loadSettingsToForm();
+    renderMenuAdmin();
+    document.getElementById('importDataArea').value = '';
+  } else {
+    showToast("Lỗi: " + result.error);
+  }
+});
 
 renderMenuAdmin();
 loadSettingsToForm();

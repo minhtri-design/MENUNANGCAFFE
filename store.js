@@ -422,5 +422,66 @@ const Store = {
       tableObj.items[it.name] = { qty: it.qty, price: it.price, unit: it.unit || null };
     });
     return this.printReceiptBLE(record.table, tableObj);
+  },
+
+  // ---------- ĐỒNG BỘ DỮ LIỆU GIỮA CÁC TRÌNH DUYỆT (Bluefy ⇄ Safari) ----------
+  // Bluefy và Safari là 2 app khác nhau trên iPhone nên KHÔNG chia sẻ chung bộ nhớ trình duyệt.
+  // Giải pháp: xuất toàn bộ dữ liệu ra 1 chuỗi JSON ở trình duyệt này, rồi nhập lại ở trình duyệt kia.
+  exportAllDataJson(){
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      tables: this.getTables(),
+      orderLog: this.getOrderLog(),
+      menu: this.getMenu(),
+      settings: this.getSettings()
+    };
+    return JSON.stringify(payload, null, 2);
+  },
+  // Trả về {ok, error?}. merge=true: chỉ ghi đè các bàn/hoá đơn có trong file nhập (giữ lại dữ liệu cũ không trùng).
+  // merge=false: THAY THẾ HOÀN TOÀN dữ liệu hiện có bằng dữ liệu trong file.
+  importAllDataJson(jsonStr, merge){
+    let payload;
+    try{
+      payload = JSON.parse(jsonStr);
+    }catch(e){
+      return { ok:false, error:"File/dữ liệu không đúng định dạng JSON" };
+    }
+    try{
+      if(merge){
+        // Bàn: cộng dồn theo tên bàn (nếu trùng tên thì merge món)
+        const currentTables = this.getTables();
+        const incomingTables = payload.tables || {};
+        for(const name in incomingTables){
+          if(!currentTables[name]){
+            currentTables[name] = incomingTables[name];
+          } else {
+            for(const itemName in incomingTables[name].items){
+              const incIt = incomingTables[name].items[itemName];
+              if(currentTables[name].items[itemName]){
+                currentTables[name].items[itemName].qty += incIt.qty;
+              } else {
+                currentTables[name].items[itemName] = { ...incIt };
+              }
+            }
+          }
+        }
+        this.saveTables(currentTables);
+
+        // Lịch sử hoá đơn: gộp theo id, bỏ trùng
+        const currentLog = this.getOrderLog();
+        const existingIds = new Set(currentLog.map(r => r.id));
+        const incomingLog = payload.orderLog || [];
+        const merged = currentLog.concat(incomingLog.filter(r => !existingIds.has(r.id)));
+        localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(merged));
+      } else {
+        if(payload.tables) this.saveTables(payload.tables);
+        if(payload.orderLog) localStorage.setItem(ORDER_LOG_KEY, JSON.stringify(payload.orderLog));
+      }
+      if(payload.menu) this.saveMenu(payload.menu);
+      if(payload.settings) this.saveSettings(payload.settings);
+      return { ok:true };
+    }catch(e){
+      return { ok:false, error: String(e) };
+    }
   }
 };
