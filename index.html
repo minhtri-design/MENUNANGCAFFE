@@ -296,6 +296,7 @@ function showToast(msg){
 
 // init
 Store.initSync(()=>{
+  currentMenu = Store.getMenu();
   renderChips();
   renderMenu(searchInput.value);
   updateCounters();

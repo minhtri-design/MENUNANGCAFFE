@@ -71,7 +71,7 @@
 <script src="menu-data.js"></script>
 <script src="store.js"></script>
 <script>
-const ALL_ITEMS = Store.getMenu().flatMap(cat => cat.items.map(it => ({...it, category: cat.category})));
+let ALL_ITEMS = Store.getMenu().flatMap(cat => cat.items.map(it => ({...it, category: cat.category})));
 
 function render(){
   const tables = Store.getTables();
@@ -393,6 +393,7 @@ document.getElementById('exportAllBtn').addEventListener('click', ()=>{
 document.getElementById('exportDate').value = Store.todayStr();
 
 Store.initSync(()=>{
+  ALL_ITEMS = Store.getMenu().flatMap(cat => cat.items.map(it => ({...it, category: cat.category})));
   render();
   renderHistory();
 });

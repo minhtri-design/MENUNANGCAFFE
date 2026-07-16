@@ -107,9 +107,16 @@ const Store = {
   // để trang tự render lại, tạo cảm giác "đồng bộ trực tuyến" thật sự.
   initSync(callback){
     _onSyncChange = callback;
+    let firedOnce = false;
+    const safeFire = () => { firedOnce = true; if(_onSyncChange) _onSyncChange(); };
+
+    // Lưới an toàn: nếu sau 2.5 giây Firebase vẫn chưa phản hồi (lỗi mạng, Rules chưa đúng,
+    // config sai...), vẫn render trang bằng dữ liệu mặc định/đang có, KHÔNG để trang treo trắng.
+    setTimeout(()=>{ if(!firedOnce) safeFire(); }, 2500);
+
     if(typeof firebase === 'undefined'){
-      console.error("Không tìm thấy Firebase SDK — kiểm tra lại thẻ <script> trong file HTML.");
-      if(_onSyncChange) _onSyncChange();
+      console.error("Không tìm thấy Firebase SDK — kiểm tra lại thẻ <script> trong file HTML (có thể do mạng chặn gstatic.com).");
+      safeFire();
       return;
     }
     if(!_fbDb){
@@ -117,22 +124,27 @@ const Store = {
       _fbDb = firebase.database();
       _migrateLocalDataIfNeeded();
     }
+    const onErr = (label) => (err) => {
+      console.error(`Firebase lỗi đọc "${label}":`, err && err.message ? err.message : err,
+        "— Kiểm tra lại Realtime Database Rules trong Firebase Console (mục Rules) đã cho phép đọc/ghi chưa.");
+      safeFire();
+    };
     _fbDb.ref('tables').on('value', snap=>{
       _tablesCache = snap.val() || {};
-      if(_onSyncChange) _onSyncChange();
-    });
+      safeFire();
+    }, onErr('tables'));
     _fbDb.ref('settings').on('value', snap=>{
       _settingsCache = snap.val() || null;
-      if(_onSyncChange) _onSyncChange();
-    });
+      safeFire();
+    }, onErr('settings'));
     _fbDb.ref('menu').on('value', snap=>{
       _menuCache = snap.val() || null;
-      if(_onSyncChange) _onSyncChange();
-    });
+      safeFire();
+    }, onErr('menu'));
     _fbDb.ref('orderLog').on('value', snap=>{
       _orderLogCache = snap.val() || {};
-      if(_onSyncChange) _onSyncChange();
-    });
+      safeFire();
+    }, onErr('orderLog'));
   },
 
   // ---------- MENU (có thể chỉnh sửa ở trang Cài đặt) ----------
