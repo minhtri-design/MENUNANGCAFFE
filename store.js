@@ -67,6 +67,40 @@ let _menuCache = null;
 let _orderLogCache = {};
 let _onSyncChange = null;
 
+// Firebase KHÔNG cho phép các ký tự . # $ / [ ] trong tên khoá (key), nhưng tên món/tên bàn
+// của quán lại có thể chứa dấu "/" (VD: "Đen Phin/Ép"). Mã hoá/giải mã ở đúng ranh giới lưu-đọc
+// Firebase để phần còn lại của ứng dụng vẫn dùng tên thật bình thường, không cần đổi gì cả.
+function _encodeFbKey(str){
+  return encodeURIComponent(str).replace(/\./g, '%2E');
+}
+function _decodeFbKey(str){
+  return decodeURIComponent(str);
+}
+function _encodeTablesForFirebase(tables){
+  const out = {};
+  for(const tName in tables){
+    const t = tables[tName];
+    const items = {};
+    for(const iName in (t.items || {})){
+      items[_encodeFbKey(iName)] = t.items[iName];
+    }
+    out[_encodeFbKey(tName)] = { ...t, items };
+  }
+  return out;
+}
+function _decodeTablesFromFirebase(raw){
+  const out = {};
+  for(const tKey in (raw || {})){
+    const t = raw[tKey];
+    const items = {};
+    for(const iKey in (t.items || {})){
+      items[_decodeFbKey(iKey)] = t.items[iKey];
+    }
+    out[_decodeFbKey(tKey)] = { ...t, items };
+  }
+  return out;
+}
+
 // Nếu Firebase còn trống (lần đầu bật đồng bộ) mà máy này đang có dữ liệu cũ trong localStorage,
 // tự động đẩy dữ liệu cũ đó lên Firebase 1 lần duy nhất để không bị mất.
 function _migrateLocalDataIfNeeded(){
@@ -79,7 +113,7 @@ function _migrateLocalDataIfNeeded(){
     const localSettings = JSON.parse(localStorage.getItem(SETTINGS_KEY) || 'null');
 
     _fbDb.ref('tables').once('value').then(snap=>{
-      if(!snap.exists() && localTables && Object.keys(localTables).length) _fbDb.ref('tables').set(localTables);
+      if(!snap.exists() && localTables && Object.keys(localTables).length) _fbDb.ref('tables').set(_encodeTablesForFirebase(localTables));
     });
     _fbDb.ref('orderLog').once('value').then(snap=>{
       if(!snap.exists() && localLogArr && localLogArr.length){
@@ -130,7 +164,7 @@ const Store = {
       safeFire();
     };
     _fbDb.ref('tables').on('value', snap=>{
-      _tablesCache = snap.val() || {};
+      _tablesCache = _decodeTablesFromFirebase(snap.val() || {});
       safeFire();
     }, onErr('tables'));
     _fbDb.ref('settings').on('value', snap=>{
@@ -244,7 +278,7 @@ const Store = {
   },
   saveTables(tables){
     _tablesCache = tables;
-    if(_fbDb) _fbDb.ref('tables').set(tables);
+    if(_fbDb) _fbDb.ref('tables').set(_encodeTablesForFirebase(tables));
   },
   getCart(){
     try{
@@ -472,7 +506,7 @@ const Store = {
   getOrderLogByDate(dateStr){
     return this.getOrderLog().filter(r => r.date === dateStr);
   },
-  logCompletedOrder(tableName, table){
+  logCompletedOrder(tableName, table, paymentMethod){
     const items = Object.entries(table.items || {}).map(([name, it])=>({
       name, qty: it.qty, price: it.price, unit: it.unit || "",
       lineTotal: it.qty * it.price
@@ -487,7 +521,8 @@ const Store = {
       table: tableName,
       guests: table.guests || 1,
       items,
-      total: items.reduce((s,it)=>s+it.lineTotal, 0)
+      total: items.reduce((s,it)=>s+it.lineTotal, 0),
+      paymentMethod: paymentMethod || "cash" // "cash" = tiền mặt, "transfer" = chuyển khoản
     };
     _orderLogCache = { ..._orderLogCache, [record.id]: record };
     if(_fbDb) _fbDb.ref('orderLog/' + record.id).set(record);

@@ -134,7 +134,8 @@ function renderTableCard(name, table){
       <div class="tc-total">${Store.formatPrice(total)}</div>
       <div class="tc-actions">
         <button class="tc-icon-btn" data-action="print-bill" data-table="${encodeURIComponent(name)}">🖨️ In hoá đơn</button>
-        <button class="tc-icon-btn success" data-action="pay-table" data-table="${encodeURIComponent(name)}">✓ Đã thanh toán</button>
+        <button class="tc-icon-btn success" data-action="pay-cash" data-table="${encodeURIComponent(name)}">💵 TT Tiền mặt</button>
+        <button class="tc-icon-btn success" data-action="pay-transfer" data-table="${encodeURIComponent(name)}">🏦 TT Chuyển khoản</button>
       </div>
     </div>
   </div>`;
@@ -202,22 +203,23 @@ async function printBill(tableName){
   }
 }
 
-function payTable(tableName){
+function payTable(tableName, method){
   const tables = Store.getTables();
   const t = tables[tableName];
   if(!t || Object.keys(t.items).length === 0){
     showToast("Bàn này chưa có món nào");
     return;
   }
-  if(!confirm(`Xác nhận ${tableName} đã thanh toán? Hoá đơn sẽ được lưu lại, bàn trống để đón khách mới.`)) return;
+  const methodLabel = method === 'cash' ? 'tiền mặt' : 'chuyển khoản';
+  if(!confirm(`Xác nhận ${tableName} đã thanh toán bằng ${methodLabel}? Hoá đơn sẽ được lưu lại, bàn trống để đón khách mới.`)) return;
 
-  Store.logCompletedOrder(tableName, t);
+  Store.logCompletedOrder(tableName, t, method);
   t.items = {};
   t.guests = 1; // reset để sẵn sàng cho nhóm khách tiếp theo
   Store.saveTables(tables);
   render();
   renderHistory();
-  showToast(`${tableName} đã thanh toán ✓ — hoá đơn đã lưu, sẵn sàng đón khách mới`);
+  showToast(`${tableName} đã thanh toán (${methodLabel}) ✓ — hoá đơn đã lưu, sẵn sàng đón khách mới`);
 }
 
 document.getElementById('tablesGrid').addEventListener('click', (e)=>{
@@ -230,7 +232,8 @@ document.getElementById('tablesGrid').addEventListener('click', (e)=>{
   else if(action === 'dec') updateItem(tableName, decodeURIComponent(btn.dataset.item), -1);
   else if(action === 'guest-inc') updateGuests(tableName, 1);
   else if(action === 'guest-dec') updateGuests(tableName, -1);
-  else if(action === 'pay-table') payTable(tableName);
+  else if(action === 'pay-cash') payTable(tableName, 'cash');
+  else if(action === 'pay-transfer') payTable(tableName, 'transfer');
   else if(action === 'print-bill') printBill(tableName);
 });
 
@@ -273,11 +276,15 @@ function renderHistory(){
       </div>
     `).join('');
 
+    const payBadge = r.paymentMethod === 'transfer'
+      ? `<span class="pay-badge pay-transfer">🏦 CK</span>`
+      : `<span class="pay-badge pay-cash">💵 Tiền mặt</span>`;
+
     return `
     <div class="history-card">
       <div class="hc-head" data-action="toggle" data-id="${r.id}">
         <div>
-          <div class="hc-table">${r.table}</div>
+          <div class="hc-table">${r.table} ${payBadge}</div>
           <div class="hc-time">${r.date} · ${r.time} · ${r.guests} khách</div>
         </div>
         <div class="hc-total">${r.total.toLocaleString('vi-VN')}k</div>
@@ -332,6 +339,10 @@ document.getElementById('clearHistoryBtn').addEventListener('click', ()=>{
 });
 
 // ---------- Xuất Excel (chứng từ doanh thu) ----------
+function paymentMethodLabel(m){
+  return m === 'transfer' ? 'Chuyển khoản' : 'Tiền mặt';
+}
+
 function buildDetailRows(records){
   const rows = [];
   records.forEach(r=>{
@@ -341,6 +352,7 @@ function buildDetailRows(records){
         "Giờ": r.time,
         "Bàn": r.table,
         "Số khách": r.guests,
+        "Hình thức TT": paymentMethodLabel(r.paymentMethod),
         "Tên món": it.name,
         "Đơn vị": it.unit || "",
         "Số lượng": it.qty,
@@ -355,14 +367,26 @@ function buildDetailRows(records){
 function buildSummaryRows(records){
   const byDate = {};
   records.forEach(r=>{
-    if(!byDate[r.date]) byDate[r.date] = { date:r.date, orders:0, revenue:0 };
-    byDate[r.date].orders += 1;
-    byDate[r.date].revenue += r.total;
+    if(!byDate[r.date]) byDate[r.date] = { date:r.date, orders:0, revenue:0, cashOrders:0, cashRevenue:0, transferOrders:0, transferRevenue:0 };
+    const d = byDate[r.date];
+    d.orders += 1;
+    d.revenue += r.total;
+    if(r.paymentMethod === 'transfer'){
+      d.transferOrders += 1;
+      d.transferRevenue += r.total;
+    } else {
+      d.cashOrders += 1;
+      d.cashRevenue += r.total;
+    }
   });
   return Object.values(byDate).sort((a,b)=>a.date.localeCompare(b.date)).map(d=>({
     "Ngày": d.date,
     "Số đơn (bàn) đã chốt": d.orders,
-    "Tổng doanh thu (VNĐ)": d.revenue * 1000
+    "Tổng doanh thu (VNĐ)": d.revenue * 1000,
+    "Số đơn tiền mặt": d.cashOrders,
+    "Doanh thu tiền mặt (VNĐ)": d.cashRevenue * 1000,
+    "Số đơn chuyển khoản": d.transferOrders,
+    "Doanh thu chuyển khoản (VNĐ)": d.transferRevenue * 1000
   }));
 }
 
