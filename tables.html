@@ -6,9 +6,19 @@
 <title>Nắng Café — Bàn &amp; Hoá đơn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260717">
+<link rel="stylesheet" href="style.css?v=20260718">
 </head>
 <body>
+<div id="authOverlay" class="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">☀️ Nắng Café</div>
+    <div class="auth-title">Đăng nhập để tiếp tục</div>
+    <input type="email" id="authEmail" placeholder="Email" autocomplete="username">
+    <input type="password" id="authPassword" placeholder="Mật khẩu" autocomplete="current-password">
+    <div class="auth-error" id="authError"></div>
+    <button class="btn-primary" id="authLoginBtn" style="width:100%">Đăng nhập</button>
+  </div>
+</div>
 
 <div class="topbar">
   <div class="topbar-inner">
@@ -68,8 +78,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script src="menu-data.js?v=20260717"></script>
-<script src="store.js?v=20260717"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="menu-data.js?v=20260718"></script>
+<script src="store.js?v=20260718"></script>
 <script>
 let ALL_ITEMS = Store.getMenu().flatMap(cat => cat.items.map(it => ({...it, category: cat.category})));
 
@@ -441,10 +452,34 @@ document.getElementById('exportAllBtn').addEventListener('click', ()=>{
 
 document.getElementById('exportDate').value = Store.todayStr();
 
+
+document.getElementById('authLoginBtn').addEventListener('click', async ()=>{
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const errEl = document.getElementById('authError');
+  errEl.style.display = 'none';
+  if(!email || !password){
+    errEl.textContent = "Nhập đủ email và mật khẩu.";
+    errEl.style.display = 'block';
+    return;
+  }
+  try{
+    await Store.login(email, password);
+  }catch(err){
+    errEl.textContent = "Sai email hoặc mật khẩu.";
+    errEl.style.display = 'block';
+  }
+});
+document.getElementById('authPassword').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') document.getElementById('authLoginBtn').click();
+});
+
+Store.initAuth(()=>{
 Store.initSync(()=>{
   ALL_ITEMS = Store.getMenu().flatMap(cat => cat.items.map(it => ({...it, category: cat.category})));
   render();
   renderHistory();
+});
 });
 // Refresh khi quay lại tab (nếu mở 2 tab cùng lúc)
 window.addEventListener('storage', ()=>{ render(); renderHistory(); });

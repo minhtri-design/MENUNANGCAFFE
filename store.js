@@ -61,6 +61,15 @@ const FIREBASE_CONFIG = {
 const MIGRATED_FLAG_KEY = "nangcafe_migrated_to_firebase_v1";
 
 let _fbDb = null;
+let _fbAuth = null;
+
+function _ensureFirebaseApp(){
+  if(typeof firebase === 'undefined') return false;
+  if(!firebase.apps.length){
+    firebase.initializeApp(FIREBASE_CONFIG);
+  }
+  return true;
+}
 let _tablesCache = {};
 let _settingsCache = null;
 let _menuCache = null;
@@ -136,6 +145,34 @@ const Store = {
     return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   },
 
+  // Gọi TRƯỚC TIÊN ở mỗi trang, TRƯỚC initSync — hiện màn hình đăng nhập nếu chưa đăng nhập,
+  // và chỉ gọi onAuthed() khi đã đăng nhập thành công. Firebase tự nhớ đăng nhập trên trình
+  // duyệt đó cho các lần vào sau (không cần gõ lại tài khoản/mật khẩu).
+  initAuth(onAuthed){
+    const overlay = document.getElementById('authOverlay');
+    if(!_ensureFirebaseApp()){
+      console.error("Không tìm thấy Firebase SDK — không thể xác thực đăng nhập.");
+      if(overlay) overlay.style.display = 'none';
+      onAuthed();
+      return;
+    }
+    if(!_fbAuth) _fbAuth = firebase.auth();
+    _fbAuth.onAuthStateChanged(user=>{
+      if(user){
+        if(overlay) overlay.style.display = 'none';
+        onAuthed();
+      } else {
+        if(overlay) overlay.style.display = 'flex';
+      }
+    });
+  },
+  login(email, password){
+    return _fbAuth.signInWithEmailAndPassword(email, password);
+  },
+  logout(){
+    return _fbAuth.signOut();
+  },
+
   // Gọi 1 LẦN DUY NHẤT ở mỗi trang, ngay khi tải trang xong, TRƯỚC lần render đầu tiên.
   // callback sẽ được gọi lại mỗi khi có bất kỳ thay đổi nào — kể cả từ thiết bị/nhân viên khác —
   // để trang tự render lại, tạo cảm giác "đồng bộ trực tuyến" thật sự.
@@ -148,13 +185,12 @@ const Store = {
     // config sai...), vẫn render trang bằng dữ liệu mặc định/đang có, KHÔNG để trang treo trắng.
     setTimeout(()=>{ if(!firedOnce) safeFire(); }, 2500);
 
-    if(typeof firebase === 'undefined'){
+    if(!_ensureFirebaseApp()){
       console.error("Không tìm thấy Firebase SDK — kiểm tra lại thẻ <script> trong file HTML (có thể do mạng chặn gstatic.com).");
       safeFire();
       return;
     }
     if(!_fbDb){
-      firebase.initializeApp(FIREBASE_CONFIG);
       _fbDb = firebase.database();
       _migrateLocalDataIfNeeded();
     }
