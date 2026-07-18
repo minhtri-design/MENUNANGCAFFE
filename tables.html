@@ -6,7 +6,7 @@
 <title>Nắng Café — Bàn &amp; Hoá đơn</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=20260716">
+<link rel="stylesheet" href="style.css?v=20260717">
 </head>
 <body>
 
@@ -68,8 +68,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-<script src="menu-data.js?v=20260716"></script>
-<script src="store.js?v=20260716"></script>
+<script src="menu-data.js?v=20260717"></script>
+<script src="store.js?v=20260717"></script>
 <script>
 let ALL_ITEMS = Store.getMenu().flatMap(cat => cat.items.map(it => ({...it, category: cat.category})));
 
@@ -102,7 +102,13 @@ function renderTableCard(name, table){
   const total = Store.tableTotal(table);
   const itemsHtml = items.length ? items.map(([itemName, it])=>`
     <div class="tc-line">
-      <div class="tc-line-name">${itemName}${it.unit?`<div class="tc-line-price">${it.price}k / ${it.unit}</div>`:`<div class="tc-line-price">${it.price}k</div>`}</div>
+      <div class="tc-line-name">${itemName}
+        <div class="tc-line-price">
+          <button class="price-edit-btn" data-action="edit-price" data-table="${encodeURIComponent(name)}" data-item="${encodeURIComponent(itemName)}" title="Sửa giá món này cho đơn này">
+            ✏️ ${it.price}k${it.unit?` / ${it.unit}`:''}
+          </button>
+        </div>
+      </div>
       <div class="tc-qty-control">
         <button data-action="dec" data-table="${encodeURIComponent(name)}" data-item="${encodeURIComponent(itemName)}">−</button>
         <span class="tc-qty-num">${it.qty}</span>
@@ -149,6 +155,24 @@ function updateItem(tableName, itemName, delta){
   if(t.items[itemName].qty <= 0) delete t.items[itemName];
   Store.saveTables(tables);
   render();
+}
+
+function editItemPrice(tableName, itemName){
+  const tables = Store.getTables();
+  const t = tables[tableName];
+  if(!t || !t.items[itemName]) return;
+  const current = t.items[itemName].price;
+  const input = prompt(`Sửa giá "${itemName}" cho đơn này (đơn vị: nghìn đồng).\nGiá hiện tại: ${current}k\nNhập giá mới (chỉ áp dụng cho đơn của bàn này, không đổi giá gốc trong menu):`, current);
+  if(input === null) return; // bấm Huỷ
+  const newPrice = Number(input.replace(',', '.').trim());
+  if(isNaN(newPrice) || newPrice < 0){
+    showToast("Giá không hợp lệ");
+    return;
+  }
+  t.items[itemName].price = newPrice;
+  Store.saveTables(tables);
+  render();
+  showToast(`Đã cập nhật giá "${itemName}" → ${newPrice}k`);
 }
 
 function updateGuests(tableName, delta){
@@ -230,6 +254,7 @@ document.getElementById('tablesGrid').addEventListener('click', (e)=>{
 
   if(action === 'inc') updateItem(tableName, decodeURIComponent(btn.dataset.item), 1);
   else if(action === 'dec') updateItem(tableName, decodeURIComponent(btn.dataset.item), -1);
+  else if(action === 'edit-price') editItemPrice(tableName, decodeURIComponent(btn.dataset.item));
   else if(action === 'guest-inc') updateGuests(tableName, 1);
   else if(action === 'guest-dec') updateGuests(tableName, -1);
   else if(action === 'pay-cash') payTable(tableName, 'cash');
